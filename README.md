@@ -14,11 +14,9 @@ This project provides a simple Dota 2 timer and Roshan overlay for your desktop,
 
 This project requires Python 3.8 or higher. Follow the steps below to set it up:
 
-1. Clone the repository: `git clone https://github.com/yourusername/dota2timer.git`
-2. Navigate to the project directory: `cd dota2timer`
+1. Clone the repository: `git clone https://github.com/Kiyogitpy/Dota2Gsi`
+2. Navigate to the project directory: `cd Dota2Gsi`
 3. Install the required Python packages: `pip install -r requirements.txt`
-4. Place your desired audio (.wav) files in the project directory.
-5. Adjust the script to point to your audio files and any other adjustments as necessary.
 6. Run the script: `python main.py`
 
 ## Usage

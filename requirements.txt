@@ -1,0 +1,4 @@
+Flask==2.0.1
+pygame==2.1.1
+keyboard==0.13.5
+PyQt5==5.15.4
