@@ -3,6 +3,13 @@ from subprocess import Popen
 import pygame
 import os
 
+# Get the current working directory
+current_directory = os.getcwd()
+
+# Create the path to the audio file inside the 'audio' folder
+audio_folder = os.path.join(current_directory, 'Audio')
+audio_file_path = os.path.join(audio_folder, 'goodbye.wav')
+
 pygame.mixer.init()
 
 # List to keep track of all subprocesses
@@ -14,7 +21,7 @@ def terminate_processes():
         process.terminate()
 
     # Load and play the sound
-    pygame.mixer.music.load('goodbye.wav')
+    pygame.mixer.music.load(audio_file_path)
     pygame.mixer.music.play()
 
     # Allow time for sound to play
@@ -27,7 +34,7 @@ def terminate_processes():
 keyboard.add_hotkey('page down', terminate_processes)
 
 # Run your scripts as subprocesses and append them to the processes list
-processes.append(Popen(['python', 'dota2timer.py']))
+processes.append(Popen(['python', 'Menu.py']))
 processes.append(Popen(['python', 'dota2gsi.py']))
 
 # Keep the script running
