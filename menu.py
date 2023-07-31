@@ -279,22 +279,36 @@ class MainWindow(DraggableWidget):
     
 
     def apply_keybind_button(self, key_type):
-        key = QtWidgets.QInputDialog.getText(self, 'Keybind', f'Press the key you want to use for the {key_type} keybind')[0]
+        key, _ = QtWidgets.QInputDialog.getText(self, 'Keybind', f'Press the key you want to use for the {key_type} keybind')
         
-        if key_type == 'rosh':
-            self.rosh_keybind = key
-            self.overlay.set_rosh_timer_keybind(key)
-            self.rosh_timer_button.setText(f'Rosh timer keybind: {key}')
-        elif key_type == 'chat':
-            self.chat_keybind = key
-            self.overlay.set_chat_keybind(key)
-            self.chat_timer_button.setText(f'Chat keybind: {key}')
-        elif key_type == 'mute':
-            self.mute_keybind = key
-            self.mute_keybind_button.setText(f'Mute keybind: {key}')
+        if key is None or len(key) != 1:
+            print("Invalid keybind, using default")
+            if key_type == 'rosh':
+                key = 'f21'
+            elif key_type == 'chat':
+                key = 'f22'
+            elif key_type == 'mute':
+                key = 'm'
+
+        try:
+            if key_type == 'rosh':
+                self.rosh_keybind = key
+                self.overlay.set_rosh_timer_keybind(key)
+                self.rosh_timer_button.setText(f'Rosh timer keybind: {key}')
+            elif key_type == 'chat':
+                self.chat_keybind = key
+                self.overlay.set_chat_keybind(key)
+                self.chat_timer_button.setText(f'Chat keybind: {key}')
+            elif key_type == 'mute':
+                self.mute_keybind = key
+                self.mute_keybind_button.setText(f'Mute keybind: {key}')
+        except Exception as e:
+            print(f"An error occurred when setting the {key_type} keybind: {e}")
+
 
         # Save the changes to the config file
         self.save_config()
+
 
 
 
