@@ -15,11 +15,11 @@ This project provides a simple Dota 2 timer and Roshan overlay for your desktop,
 This project requires Python 3.8 or higher. Follow the steps below to set it up:
 
 1. Clone the repository: `git clone https://github.com/Kiyogitpy/Dota2Gsi`
-2. Navigate to the project directory: `cd Dota2Gsi`
+2. Navigate to the project directory: `cd your-directory/Dota2Gsi`
 3. Install the required Python packages: `pip install -r requirements.txt`
-6. Run the script: `python main.py`
+4. Run the script: `python main.py`
 
-Or use the release and just run the main.exe
+Or alternativly use the release and just run the main.exe
 
 ## Usage
 
