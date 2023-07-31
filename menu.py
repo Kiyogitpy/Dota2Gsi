@@ -1,8 +1,11 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimedia
-from PyQt5.QtWidgets import QLineEdit
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QSlider
 import keyboard  # import the keyboard package
 from time import sleep
 import os
+from pygame import mixer
+
+
 
 
 # Get the current working directory
@@ -65,10 +68,7 @@ class Overlay(QtWidgets.QWidget):
 
         # Position window
         self.move(350, height - 250)
-
-        self.player = QtMultimedia.QMediaPlayer()
-        self.player.setMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile("roshan.wav")))
-
+        
         # Initially hide the window
         self.hide()
 
@@ -133,6 +133,8 @@ class Overlay(QtWidgets.QWidget):
     def notify_roshan_up(self, time_string):
         if self.timerActive and self.counter <= 180:
             print(time_string)
+            mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
+            mixer.music.play()
             keyboard.press_and_release('enter')
             sleep(0.1)
             keyboard.write(" Roshan can be up from now and guaranteed to be up in:  " + time_string + " min")
@@ -159,6 +161,7 @@ class MainWindow(DraggableWidget):
         self.setStyleSheet("background-color: #01242d")
         self.setGeometry(200, 200, 400, 300)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.oldPos = QtCore.QPoint(0, 0)
 
         try:
             with open('config.txt', 'r') as config_file:
@@ -204,16 +207,23 @@ class MainWindow(DraggableWidget):
         self.mute_keybind_button.clicked.connect(lambda: self.apply_keybind_button('mute'))
         layout.addWidget(self.mute_keybind_button)
 
+        self.bounty_checkbox = QtWidgets.QCheckBox('Enable Bounty Rune', self)
+        self.bounty_checkbox.setChecked(True)  # Initially checked
+        layout.addWidget(self.bounty_checkbox)
 
-        self.stack_checkbox = QtWidgets.QCheckBox('Enable stack alert', self)
+        self.power_checked = QtWidgets.QCheckBox('Enable Power rune', self)
+        self.power_checked.setChecked(True)  # Initially checked
+        layout.addWidget(self.power_checked)
+
+        self.stack_checkbox = QtWidgets.QCheckBox('Enable Stack Alert', self)
         self.stack_checkbox.setChecked(True)  # Initially checked
         layout.addWidget(self.stack_checkbox)
 
-        self.exprune_checkbox = QtWidgets.QCheckBox('Enable Express Rune alert', self)
+        self.exprune_checkbox = QtWidgets.QCheckBox('Enable Express Rune Alert', self)
         self.exprune_checkbox.setChecked(True)  # Initially checked
         layout.addWidget(self.exprune_checkbox)
 
-        self.thirdsound_checkbox = QtWidgets.QCheckBox('Enable Third Sound alert', self)
+        self.thirdsound_checkbox = QtWidgets.QCheckBox('Enable Lotus Alert', self)
         self.thirdsound_checkbox.setChecked(True)  # Initially checked
         layout.addWidget(self.thirdsound_checkbox)
 
@@ -227,6 +237,15 @@ class MainWindow(DraggableWidget):
         self.chat_timer_button.clicked.connect(self.save_config)
         self.mute_keybind_button.clicked.connect(self.save_config)
         
+
+        # Create a Volume Slider
+        self.volume_slider = QSlider(QtCore.Qt.Horizontal, self)
+        self.volume_slider.setRange(0, 100)  # 0 to 100 percent
+        self.volume_slider.setValue(50)  # Initial value
+        # Add this line in the constructor (probably in the __init__ method) after defining the volume_slider
+        self.volume_slider.valueChanged.connect(self.save_volume_config)
+        layout.addWidget(self.volume_slider)
+
         self.load_config() 
         # Set Layout
         self.setLayout(layout)
@@ -235,17 +254,29 @@ class MainWindow(DraggableWidget):
         self.timer.timeout.connect(self.check_key_press)
         self.timer.start(100)  # Check every 100 milliseconds
 
+    # Add this method to save the current configuration whenever the volume slider's value is changed
+    def save_volume_config(self):
+        self.save_config()
+
+    #Crude way of loading/saving config, should rework to json to use pandas
     def load_config(self):
         try:
             with open('config.txt', 'r') as file:
                 lines = file.readlines()
-                self.stack_checkbox.setChecked(lines[0].strip() == 'True')
-                self.exprune_checkbox.setChecked(lines[1].strip() == 'True')
-                self.thirdsound_checkbox.setChecked(lines[2].strip() == 'True')
-                self.mute_keybind = lines[3].strip()
-                self.rosh_keybind = lines[4].strip()
-                self.chat_keybind = lines[5].strip()
-                x, y = map(int, lines[6].strip().split(','))
+                self.bounty_checkbox.setChecked(lines[0].strip() == 'True')
+                self.power_checked.setChecked(lines[1].strip() == 'True')
+                self.stack_checkbox.setChecked(lines[2].strip() == 'True')
+                self.exprune_checkbox.setChecked(lines[3].strip() == 'True')
+                self.thirdsound_checkbox.setChecked(lines[4].strip() == 'True')
+                self.mute_keybind = lines[5].strip()
+                self.rosh_keybind = lines[6].strip()
+                self.chat_keybind = lines[7].strip()
+                
+                volume_percent = int(lines[8].strip())  # Get the value as percentage
+                self.volume_slider.setValue(volume_percent)  # Set the slider to the percentage value
+                mixer.music.set_volume(volume_percent / 100)
+
+                x, y = map(int, lines[9].strip().split(','))  # Note the corrected line index
                 self.move(x, y)
 
                 # Apply the loaded keybinds to buttons' text
@@ -256,18 +287,23 @@ class MainWindow(DraggableWidget):
                 # Apply the keybinds to the overlay
                 self.overlay.set_rosh_timer_keybind(self.rosh_keybind)
                 self.overlay.set_chat_keybind(self.chat_keybind)
-        except (ValueError, IndexError, FileNotFoundError):
-            print("Error reading config.txt, using default values")
+        except Exception as e:
+            print(f'An error occurred while loading the config: {str(e)}')
+            print(f'Falling back to the default keybinds')
+
     
     
     def save_config(self):
         config_lines = [
+            str(self.bounty_checkbox.isChecked()) + '\n',
+            str(self.power_checked.isChecked()) + '\n',
             str(self.stack_checkbox.isChecked()) + '\n',
             str(self.exprune_checkbox.isChecked()) + '\n',
             str(self.thirdsound_checkbox.isChecked()) + '\n',
             (self.mute_keybind if hasattr(self, 'mute_keybind') else 'm') + '\n',
             (self.rosh_keybind if hasattr(self, 'rosh_keybind') else 'f21') + '\n',
             (self.chat_keybind if hasattr(self, 'chat_keybind') else 'f22') + '\n',
+            str(self.volume_slider.value()) + '\n', 
             f'{self.x()},{self.y()}\n'
         ]
         
@@ -276,7 +312,6 @@ class MainWindow(DraggableWidget):
         
         print("Configuration saved!")
 
-    
 
     def apply_keybind_button(self, key_type):
         key, _ = QtWidgets.QInputDialog.getText(self, 'Keybind', f'Press the key you want to use for the {key_type} keybind')
@@ -323,7 +358,7 @@ class MainWindow(DraggableWidget):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-
+    mixer.init()
     # Global stylesheet for the application
     app.setStyleSheet("""
         * {

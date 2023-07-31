@@ -1,7 +1,10 @@
+False
 True
 True
+False
 True
-m
-1
-f22
-517,253
+r
+w
+e
+23
+749,309

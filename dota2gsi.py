@@ -1,5 +1,5 @@
 from flask import Flask, request
-import pygame
+from pygame import mixer
 import logging
 import keyboard
 import os
@@ -14,14 +14,18 @@ audio_folder = os.path.join(current_directory, 'Audio')
 
 def read_config():
     with open('config.txt', 'r') as file:
+        power_rune_enabled = file.readline().strip() == 'True'
         bounty_rune_enabled = file.readline().strip() == 'True'
         stack_alert_enabled = file.readline().strip() == 'True'
         exprune_alert_enabled = file.readline().strip() == 'True'
         thirdsound_alert_enabled = file.readline().strip() == 'True'
         mute_keybind = file.readline().strip()
-        # You may also read the x and y positions if needed
-        # x, y = map(int, file.readline().strip().split(','))
-    return bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled, mute_keybind
+        # Skipping the next three lines since they are not used
+        file.readline()
+        file.readline()
+        volume_percent = int(file.readline().strip())  # Get the value as percentage
+        mixer.music.set_volume(volume_percent / 100)
+    return power_rune_enabled, bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled, mute_keybind
 
 app = Flask(__name__)
 
@@ -30,6 +34,7 @@ last_stack_played = -1
 last_exprune_played = -1
 last_thirdsound_played = -1
 bounty_rune_played = -1
+power_rune_played = -1
 
 # Flag for muting the sounds
 mute_sounds = False
@@ -41,8 +46,9 @@ def handle_post():
     global last_thirdsound_played
     global mute_sounds
     global bounty_rune_played
+    global power_rune_played
 
-    bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled, _ = read_config()
+    power_rune_enabled, bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled, _ = read_config()
     data = request.get_json()
 
     # Check if the 'map' key exists in the data
@@ -58,8 +64,8 @@ def handle_post():
 
                 if stack_alert_enabled  and minutes >= 1 and seconds == 40 and minutes != last_stack_played:
                     print("Playing stack.wav")
-                    pygame.mixer.music.load(os.path.join(audio_folder, 'stack.wav'))
-                    pygame.mixer.music.play()
+                    mixer.music.load(os.path.join(audio_folder, 'stack.wav'))
+                    mixer.music.play()
                     last_stack_played = minutes
                     return "OK"
 
@@ -67,8 +73,8 @@ def handle_post():
                 if exprune_alert_enabled and (minutes == 6 and seconds == 30 and minutes != last_exprune_played) or \
                 (minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30 and minutes != last_exprune_played):
                     print("Playing exprune.wav")
-                    pygame.mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
-                    pygame.mixer.music.play()
+                    mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
+                    mixer.music.play()
                     last_exprune_played = minutes
                     return "OK"
 
@@ -76,58 +82,67 @@ def handle_post():
                 # lotus alert
                 if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes != last_thirdsound_played:
                     print("Playing lotus.wav")
-                    pygame.mixer.music.load(os.path.join(audio_folder, 'lotus.wav'))
-                    pygame.mixer.music.play()
+                    mixer.music.load(os.path.join(audio_folder, 'lotus.wav'))
+                    mixer.music.play()
                     last_thirdsound_played = minutes
                     return "OK"
                 
-                # lotus alert
-                if bounty_rune_enabled and(minutes == 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
-                    print("Playing lotus.wav")
-                    pygame.mixer.music.load(os.path.join(audio_folder, 'bounty.wav'))
-                    pygame.mixer.music.play()
-                    last_thirdsound_played = minutes
+                # bounty alert
+                if bounty_rune_enabled and (minutes - 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
+                    print("Playing bounty.wav")
+                    mixer.music.load(os.path.join(audio_folder, 'bounty.wav'))
+                    mixer.music.play()
+                    bounty_rune_played = minutes
+                    return "OK"
+                
+                # power alert
+                if power_rune_enabled and (minutes - 5) % 2 == 0 and seconds == 51 and minutes != power_rune_played:
+                    print("Playing power.wav")
+                    mixer.music.load(os.path.join(audio_folder, 'power.wav'))
+                    mixer.music.play()
+                    power_rune_played = minutes
                     return "OK"
 
     return "OK"
 
-def toggle_mute(e):
+def toggle_mute():
     global mute_sounds
     mute_sounds = not mute_sounds
     
     if mute_sounds:
         print('Muted')
-        pygame.mixer.music.load(os.path.join(audio_folder, 'muted.wav'))
+        mixer.music.load(os.path.join(audio_folder, 'muted.wav'))
     else:
         print('Unmuted')
-        pygame.mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
+        mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
 
-    pygame.mixer.music.play()
+    mixer.music.play()
+
 
 
 if __name__ == '__main__':
-    pygame.mixer.init()
+    mixer.init()
 
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 
     try:
         # Attempt to read the configuration
-        _, _, _, mute_keybind_input = read_config()
+        _, _, _, _, _, mute_keybind_input = read_config()
 
         # If the keybind is null or some unknown value, raise an exception
         if not mute_keybind_input:
             raise ValueError('Keybind is not valid')
 
         # Register the hotkey and attach it to the toggle_mute function
-        keyboard.on_press_key(mute_keybind_input, toggle_mute, suppress=False)
+        keyboard.on_press_key(mute_keybind_input, lambda e: toggle_mute(), suppress=False)
 
     except Exception as e:
         print(f'An error occurred while setting the keybind: {str(e)}')
         print(f'Falling back to the default keybind: {default_keybind}')
 
         # Register the hotkey using the default keybind
-        keyboard.on_press_key(default_keybind, toggle_mute, suppress=False)
+        keyboard.on_press_key(default_keybind, lambda e: toggle_mute(), suppress=False)
 
 
     app.run(port=3000)

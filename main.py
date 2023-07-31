@@ -1,6 +1,6 @@
 import keyboard
 from subprocess import Popen
-import pygame
+from pygame import mixer, time
 import os
 
 # Get the current working directory
@@ -10,7 +10,12 @@ current_directory = os.getcwd()
 audio_folder = os.path.join(current_directory, 'Audio')
 audio_file_path = os.path.join(audio_folder, 'goodbye.wav')
 
-pygame.mixer.init()
+mixer.init()
+
+with open('config.txt', 'r') as file:
+    lines = file.readlines() # Read all lines into a list
+    volume_percent = int(lines[8].strip()) # Get the value from the 7th line (index 6)
+    mixer.music.set_volume(volume_percent / 100) # Set the volume in Pygame as a fraction
 
 # List to keep track of all subprocesses
 processes = []
@@ -21,11 +26,11 @@ def terminate_processes():
         process.terminate()
 
     # Load and play the sound
-    pygame.mixer.music.load(audio_file_path)
-    pygame.mixer.music.play()
+    mixer.music.load(audio_file_path)
+    mixer.music.play()
 
     # Allow time for sound to play
-    pygame.time.wait(2000)  # waits for 5000 milliseconds
+    time.wait(2000)  # waits for 5000 milliseconds
 
     # Terminate main script
     os._exit(0)
