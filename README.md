@@ -1,6 +1,6 @@
 # Dota 2 Timer and Roshan Overlay
 
-This project provides a simple Dota 2 timer and Roshan overlay for your desktop, offering a convenient way to keep track of in-game time and events. The overlay includes a countdown timer for Roshan's respawn, and the timer plays audio alerts for different in-game events.
+This project provides a simple Dota 2 timer and Roshan overlay for your desktop, offering a convenient way to keep track of in-game time and events. The overlay includes a countdown timer for Roshan's respawn, and the timer plays audio alerts for different in-game events such as stacking, lotus and exp rune.
 
 ## Features
 
@@ -19,14 +19,16 @@ This project requires Python 3.8 or higher. Follow the steps below to set it up:
 3. Install the required Python packages: `pip install -r requirements.txt`
 6. Run the script: `python main.py`
 
+Or use the release and just run the main.exe
+
 ## Usage
 
-- After launching the script, press 'F21' to start the Roshan respawn timer. Press 'F21' again to reset the timer if it's already running.
+- After launching the script, "home" is the keybind to make the ui visible or hide it, by default f21 is the key for roshan timer.
 - The timer will count down, changing colors as it progresses.
 - When the countdown reaches zero, an audio alert will play, and the overlay will disappear.
 - Press 'Page Down' to stop the script. An audio alert will play upon termination.
 - Press 'F22' to send the current Roshan time to chat.
-- Press 'Page Up' to mute all sounds.
+- Press 'M' to mute all sounds.
 
 ## License
 
