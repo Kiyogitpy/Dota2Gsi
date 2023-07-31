@@ -21,6 +21,10 @@ This project requires Python 3.8 or higher. Follow the steps below to set it up:
 
 Or alternativly use the release and just run the main.exe
 
+To configure the Dota client to report gamestate, you need to add a config file in steamapps\common\dota 2 beta\game\dota\cfg\gamestate_integration\. The file must use the name pattern called gamestate_integration_*.cfg, for example gamestate_integration_dota2-gsi.cfg.
+
+The gamestate_integration_dota2-gsi.cfg is included in this repository, you can copy it straight into your Dota directory to get started.
+
 ## Usage
 
 - After launching the script, "home" is the keybind to make the ui visible or hide it, by default f21 is the key for roshan timer.
