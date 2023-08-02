@@ -1,11 +1,12 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QSlider
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QPixmap, QImage, QIcon
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import QSlider, QGridLayout
 import keyboard  # import the keyboard package
 from time import sleep
 import os
 from pygame import mixer
-
-
+import json
 
 
 # Get the current working directory
@@ -14,6 +15,73 @@ current_directory = os.getcwd()
 # Create the path to the audio file inside the 'audio' folder
 audio_folder = os.path.join(current_directory, 'Audio')
 
+mute = False
+last_stack_played = -1
+last_exprune_played = -1
+last_thirdsound_played = -1
+bounty_rune_played = -1
+power_rune_played = -1
+
+
+def process_game_data(minutes, seconds):
+    global last_stack_played
+    global last_exprune_played
+    global last_thirdsound_played
+    global bounty_rune_played
+    global power_rune_played           
+
+    try:
+        with open('config.json', 'r') as file:
+            config_data = json.load(file)
+            power_rune_enabled = config_data['power_checked']
+            bounty_rune_enabled = config_data['bounty_checkbox']
+            stack_alert_enabled = config_data['stack_checkbox']
+            exprune_alert_enabled = config_data['exprune_checkbox']
+            thirdsound_alert_enabled = config_data['thirdsound_checkbox']
+            return power_rune_enabled, bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled
+    except Exception as e:
+        print(f'An error occurred while loading the config: {str(e)}')
+        # Add any default values or handling you want here
+    if not mute:              
+        if stack_alert_enabled  and minutes >= 1 and seconds == 40 and minutes != last_stack_played:
+            print("Playing stack.wav")
+            mixer.music.load(os.path.join(audio_folder, 'stack.wav'))
+            mixer.music.play()
+            last_stack_played = minutes
+            return "OK"
+
+        # Express Rune alert
+        if exprune_alert_enabled and (minutes == 6 and seconds == 30 and minutes != last_exprune_played) or \
+        (minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30 and minutes != last_exprune_played):
+            print("Playing exprune.wav")
+            mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
+            mixer.music.play()
+            last_exprune_played = minutes
+            return "OK"
+
+        # lotus alert
+        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes != last_thirdsound_played:
+            print("Playing lotus.wav")
+            mixer.music.load(os.path.join(audio_folder, 'lotus.wav'))
+            mixer.music.play()
+            last_thirdsound_played = minutes
+            return "OK"
+        
+        # bounty alert
+        if bounty_rune_enabled and (minutes - 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
+            print("Playing bounty.wav")
+            mixer.music.load(os.path.join(audio_folder, 'bounty.wav'))
+            mixer.music.play()
+            bounty_rune_played = minutes
+            return "OK"
+        
+        # power alert
+        if power_rune_enabled and (minutes - 5) % 2 == 0 and seconds == 51 and minutes != power_rune_played:
+            print("Playing power.wav")
+            mixer.music.load(os.path.join(audio_folder, 'power.wav'))
+            mixer.music.play()
+            power_rune_played = minutes
+            return "OK"
 
 
 class DraggableWidget(QtWidgets.QWidget):
@@ -35,7 +103,7 @@ class DraggableWidget(QtWidgets.QWidget):
 
 
 class Overlay(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self)
 
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
@@ -45,10 +113,10 @@ class Overlay(QtWidgets.QWidget):
         self.label = QtWidgets.QLabel(self)
 
         # Load image and convert it to QImage
-        image = QtGui.QImage(os.path.join(audio_folder, 'rosh.png'))
+        image = QImage(os.path.join(audio_folder, 'rosh.png'))
 
         # Convert QImage to QPixmap and resize
-        self.pixmap = QtGui.QPixmap.fromImage(image).scaled(100, 100, QtCore.Qt.KeepAspectRatio)
+        self.pixmap = QPixmap.fromImage(image).scaled(100, 100, QtCore.Qt.KeepAspectRatio)
         self.label.setPixmap(self.pixmap)
 
         self.original_counter = 11*60
@@ -158,54 +226,78 @@ class MainWindow(DraggableWidget):
         super().__init__(on_move_callback=self.save_config)
         self.overlay = overlay  # Store the overlay instance
         self.setWindowTitle('Welcome')
-        self.setStyleSheet("background-color: #01242d")
+        self.setObjectName("mainwindow")
         self.setGeometry(200, 200, 400, 300)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
         self.oldPos = QtCore.QPoint(0, 0)
+        self.is_recording = False
+        self.recording_for = None
+        grid_layout = QGridLayout()
 
         try:
-            with open('config.txt', 'r') as config_file:
-                lines = config_file.readlines()
-                x, y = map(int, lines[-1].strip().split(',')) # Get the last line for the x and y positions
-                self.move(x, y)
-        except (ValueError, IndexError):
-            print("Error reading config.txt, using default values")
-            # Set default x and y values if needed
+            with open('config.json', 'r') as config_file:
+                    config = json.load(config_file)
+                    x, y = config['position']
+                    self.move(x, y)
+        except (json.JSONDecodeError, KeyError):
+            print("Error reading config.json, using default values")
 
         layout = QtWidgets.QVBoxLayout()
         # Exit Button
         exit_button = QtWidgets.QPushButton("✕", self)
-        exit_button.setStyleSheet("""
-            QPushButton {
-                color: #d2f5fe;
-                font-weight: bold;
-                background-color: transparent;
-                border: none;
-                font-size: 20px;
-            }
-            QPushButton:hover {
-                color: #ec0445;
-            }
-        """)
+        exit_button.setObjectName("exitButton")
+
         exit_button.setFixedWidth(30)
         exit_button.clicked.connect(self.close)
-        layout.addWidget(exit_button, alignment=QtCore.Qt.AlignRight)
 
+        header_layout = QtWidgets.QHBoxLayout()  # Create a horizontal layout for the header
+
+        # Create a label for the header text
+        header_label = QtWidgets.QLabel("Dota 2 Timer", self)
+        header_label.setStyleSheet("""
+            QLabel {
+                font-size: 20px;
+                font-weight: bold;
+                color: #d2f5fe;
+            }
+        """)
+        header_layout.addWidget(header_label)  # Add the label to the header layout
+
+        # Add an icon to the header layout
+        icon_label = QtWidgets.QLabel(self)
+        pixmap = QPixmap(os.path.join(audio_folder, "retush.png"))  # Load the image
+        icon_label.setPixmap(pixmap.scaled(30, 30, QtCore.Qt.KeepAspectRatio))  # Set the image to the label, resizing as needed
+        header_layout.addWidget(icon_label, alignment=QtCore.Qt.AlignCenter)  # Add the icon to the header layout
+
+        # Add exit button to the header layout
+        header_layout.addWidget(exit_button, alignment=QtCore.Qt.AlignRight)
+
+        # Add the header layout to the main layout
+        layout.addLayout(header_layout)
+
+        
 
         # Button for rosh timer keybind
         self.rosh_timer_button = QtWidgets.QPushButton('Set rosh timer keybind', self)
         self.rosh_timer_button.clicked.connect(lambda: self.apply_keybind_button('rosh'))
-        layout.addWidget(self.rosh_timer_button)
+        grid_layout.addWidget(self.rosh_timer_button, 0, 0)
 
         # Button for chat keybind
         self.chat_timer_button = QtWidgets.QPushButton('Set chat keybind', self)
         self.chat_timer_button.clicked.connect(lambda: self.apply_keybind_button('chat'))
-        layout.addWidget(self.chat_timer_button)
+        grid_layout.addWidget(self.chat_timer_button, 0, 1)
 
         # Button for mute keybind
         self.mute_keybind_button = QtWidgets.QPushButton('Set mute keybind', self)
         self.mute_keybind_button.clicked.connect(lambda: self.apply_keybind_button('mute'))
-        layout.addWidget(self.mute_keybind_button)
+        grid_layout.addWidget(self.mute_keybind_button, 1, 0)
+
+        # Button for show/hide keybind
+        self.show_hide_button = QtWidgets.QPushButton('Set show/hide keybind', self)
+        self.show_hide_button.clicked.connect(lambda: self.apply_keybind_button('show_hide'))
+        grid_layout.addWidget(self.show_hide_button, 1, 1)
+
+        layout.addLayout(grid_layout)
 
         self.bounty_checkbox = QtWidgets.QCheckBox('Enable Bounty Rune', self)
         self.bounty_checkbox.setChecked(True)  # Initially checked
@@ -228,6 +320,8 @@ class MainWindow(DraggableWidget):
         layout.addWidget(self.thirdsound_checkbox)
 
         # Connect checkbox state change to configuration saving
+        self.bounty_checkbox.stateChanged.connect(self.save_config)
+        self.power_checked.stateChanged.connect(self.save_config)
         self.stack_checkbox.stateChanged.connect(self.save_config)
         self.exprune_checkbox.stateChanged.connect(self.save_config)
         self.thirdsound_checkbox.stateChanged.connect(self.save_config)
@@ -249,7 +343,7 @@ class MainWindow(DraggableWidget):
         self.load_config() 
         # Set Layout
         self.setLayout(layout)
-
+        
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.check_key_press)
         self.timer.start(100)  # Check every 100 milliseconds
@@ -261,132 +355,186 @@ class MainWindow(DraggableWidget):
     #Crude way of loading/saving config, should rework to json to use pandas
     def load_config(self):
         try:
-            with open('config.txt', 'r') as file:
-                lines = file.readlines()
-                self.bounty_checkbox.setChecked(lines[0].strip() == 'True')
-                self.power_checked.setChecked(lines[1].strip() == 'True')
-                self.stack_checkbox.setChecked(lines[2].strip() == 'True')
-                self.exprune_checkbox.setChecked(lines[3].strip() == 'True')
-                self.thirdsound_checkbox.setChecked(lines[4].strip() == 'True')
-                self.mute_keybind = lines[5].strip()
-                self.rosh_keybind = lines[6].strip()
-                self.chat_keybind = lines[7].strip()
-                
-                volume_percent = int(lines[8].strip())  # Get the value as percentage
-                self.volume_slider.setValue(volume_percent)  # Set the slider to the percentage value
+            with open('config.json', 'r') as file:
+                config_data = json.load(file)
+
+                self.bounty_checkbox.setChecked(config_data['bounty_checkbox'])
+                self.power_checked.setChecked(config_data['power_checked'])
+                self.stack_checkbox.setChecked(config_data['stack_checkbox'])
+                self.exprune_checkbox.setChecked(config_data['exprune_checkbox'])
+                self.thirdsound_checkbox.setChecked(config_data['thirdsound_checkbox'])
+                self.mute_keybind = config_data['mute_keybind']
+                self.rosh_keybind = config_data['rosh_keybind']
+                self.chat_keybind = config_data['chat_keybind']
+
+                volume_percent = config_data['volume_percent']
+                self.volume_slider.setValue(volume_percent)
                 mixer.music.set_volume(volume_percent / 100)
 
-                x, y = map(int, lines[9].strip().split(','))  # Note the corrected line index
+                self.show_hide_keybind = config_data['show_hide_keybind']
+                x, y = config_data['position']
                 self.move(x, y)
 
-                # Apply the loaded keybinds to buttons' text
                 self.mute_keybind_button.setText(f'Mute keybind: {self.mute_keybind}')
                 self.rosh_timer_button.setText(f'Rosh timer keybind: {self.rosh_keybind}')
                 self.chat_timer_button.setText(f'Chat keybind: {self.chat_keybind}')
+                self.show_hide_button.setText(f'Show/Hide keybind: {self.show_hide_keybind}')
 
-                # Apply the keybinds to the overlay
                 self.overlay.set_rosh_timer_keybind(self.rosh_keybind)
                 self.overlay.set_chat_keybind(self.chat_keybind)
+
         except Exception as e:
             print(f'An error occurred while loading the config: {str(e)}')
             print(f'Falling back to the default keybinds')
 
-    
-    
     def save_config(self):
-        config_lines = [
-            str(self.bounty_checkbox.isChecked()) + '\n',
-            str(self.power_checked.isChecked()) + '\n',
-            str(self.stack_checkbox.isChecked()) + '\n',
-            str(self.exprune_checkbox.isChecked()) + '\n',
-            str(self.thirdsound_checkbox.isChecked()) + '\n',
-            (self.mute_keybind if hasattr(self, 'mute_keybind') else 'm') + '\n',
-            (self.rosh_keybind if hasattr(self, 'rosh_keybind') else 'f21') + '\n',
-            (self.chat_keybind if hasattr(self, 'chat_keybind') else 'f22') + '\n',
-            str(self.volume_slider.value()) + '\n', 
-            f'{self.x()},{self.y()}\n'
-        ]
-        
-        with open('config.txt', 'w') as file:
-            file.writelines(config_lines)
-        
+        config_data = {
+            'bounty_checkbox': self.bounty_checkbox.isChecked(),
+            'power_checked': self.power_checked.isChecked(),
+            'stack_checkbox': self.stack_checkbox.isChecked(),
+            'exprune_checkbox': self.exprune_checkbox.isChecked(),
+            'thirdsound_checkbox': self.thirdsound_checkbox.isChecked(),
+            'mute_keybind': getattr(self, 'mute_keybind', 'm'),
+            'rosh_keybind': getattr(self, 'rosh_keybind', 'f21'),
+            'chat_keybind': getattr(self, 'chat_keybind', 'f22'),
+            'volume_percent': self.volume_slider.value(),
+            'show_hide_keybind': getattr(self, 'show_hide_keybind', 'home'),
+            'position': [self.x(), self.y()]
+        }
+
+        with open('config.json', 'w') as file:
+            json.dump(config_data, file)
+
         print("Configuration saved!")
 
 
-    def apply_keybind_button(self, key_type):
-        key, _ = QtWidgets.QInputDialog.getText(self, 'Keybind', f'Press the key you want to use for the {key_type} keybind')
+    def keyPressEvent(self, event):
+        if self.is_recording:
+            key = event.key()
+            modifiers = event.modifiers()
+            key_combination = ''
+
+            if modifiers & Qt.ControlModifier:
+                key_combination += 'Ctrl+'
+            if modifiers & Qt.AltModifier:
+                key_combination += 'Alt+'
+            if modifiers & Qt.ShiftModifier:
+                key_combination += 'Shift+'
+
+            if Qt.Key_A <= key <= Qt.Key_Z:
+                key_combination += chr(key).lower()
+            elif Qt.Key_F1 <= key <= Qt.Key_F12:
+                key_combination += 'F' + str(key - Qt.Key_F1 + 1)
+
+            if key_combination != '' and key_combination[-1] != '+':
+                self.apply_key_combination(key_combination)
+
+    def apply_key_combination(self, key_combination):
+        if self.recording_for == 'rosh':
+            self.rosh_keybind = key_combination
+            self.overlay.set_rosh_timer_keybind(key_combination)
+            self.rosh_timer_button.setText(f'Rosh timer keybind: {key_combination}')
+        elif self.recording_for == 'chat':
+            self.chat_keybind = key_combination
+            self.overlay.set_chat_keybind(key_combination)
+            self.chat_timer_button.setText(f'Chat keybind: {key_combination}')
+        elif self.recording_for == 'mute':
+            self.mute_keybind = key_combination
+            self.mute_keybind_button.setText(f'Mute keybind: {key_combination}')
+        elif self.recording_for == 'show_hide':
+            self.show_hide_keybind = key_combination
+            self.show_hide_button.setText(f'Show/Hide keybind: {key_combination}')
         
-        if key is None or len(key) != 1:
-            print("Invalid keybind, using default")
-            if key_type == 'rosh':
-                key = 'f21'
-            elif key_type == 'chat':
-                key = 'f22'
-            elif key_type == 'mute':
-                key = 'm'
+        self.is_recording = False
+        self.recording_for = None
+        self.save_config()
 
-        try:
-            if key_type == 'rosh':
-                self.rosh_keybind = key
-                self.overlay.set_rosh_timer_keybind(key)
-                self.rosh_timer_button.setText(f'Rosh timer keybind: {key}')
-            elif key_type == 'chat':
-                self.chat_keybind = key
-                self.overlay.set_chat_keybind(key)
-                self.chat_timer_button.setText(f'Chat keybind: {key}')
-            elif key_type == 'mute':
-                self.mute_keybind = key
-                self.mute_keybind_button.setText(f'Mute keybind: {key}')
-        except Exception as e:
-            print(f"An error occurred when setting the {key_type} keybind: {e}")
-
-
+    def apply_keybind_button(self, key_type):
+        self.is_recording = True
+        self.recording_for = key_type
+        button = {
+            'rosh': self.rosh_timer_button,
+            'chat': self.chat_timer_button,
+            'mute': self.mute_keybind_button,
+            'show_hide': self.show_hide_button   # Add this line
+        }[key_type]
+        button.setText('Recording...')
         # Save the changes to the config file
         self.save_config()
 
 
-
-
     def check_key_press(self):
-        if keyboard.is_pressed('home'):
+        global mute
+        with open("config.json", "r") as file:
+            config_data = json.load(file)
+            volume_percent = config_data["volume_percent"] / 100
+        if hasattr(self, 'show_hide_keybind') and keyboard.is_pressed(self.show_hide_keybind):
             if self.isVisible():
                 self.hide()
             else:
                 self.show()
-
+        if hasattr(self, "mute_keybind") and keyboard.is_pressed(self.mute_keybind):
+            if mute == False:
+                mixer.music.load(os.path.join(audio_folder, 'muted.wav'))
+                mixer.music.set_volume(0)
+                mute = True
+                print("muting")
+            elif mute == True:
+                mixer.music.set_volume(volume_percent)
+                mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
+                mute = False # Fixed line
+                print(volume_percent)
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
+    icon_path = os.path.abspath("Audio/retush.png")
+    app_icon = QIcon()
+    app_icon.addFile(icon_path, QSize(16, 16))
+    app.setWindowIcon(app_icon)
+
     mixer.init()
     # Global stylesheet for the application
     app.setStyleSheet("""
         * {
             font-family: Arial, sans-serif;
             font-size: 12px;
-            color: #FFF;
+            color: #f6e1d5; /* --text */    
         }
+        #mainwindow{
+            background-color:#272727;
+                      }
         QLineEdit, QLabel, QCheckBox {
             padding: 5px;
         }
         QLabel {
-            color: #d2f5fe;
+            color: #f6e1d5; /* --text */
         }
         QLineEdit {
-            border: 1px solid #231901;
+            border: 1px solid #080c26; /* --secondary */
             border-radius: 4px;
-            background-color: #01242d;
+            background-color: #110804; /* --background */
         }
         QPushButton {
-            color: #d2f5fe;
-            background-color: #fc5122;
-            border: 1px solid #fc5122;
+            color: #FFF; /* --text */
+            background-color: #1a577a; /* --primary */
+            border: 2px solid #080c26; /* --accent */
             border-radius: 4px;
             padding: 10px 20px;
             text-align: center;
         }
         QPushButton:hover {
-            background-color: #ec0445;
+            background-color: #2cceb9; /* --accent */
+        }
+        #exitButton {
+                color: #d2f5fe;
+                font-weight: bold;
+                background-color: transparent;
+                border: none;
+                font-size: 20px;
+        }
+        #exitButton:hover {
+            color: #ec0445;
         }
         QCheckBox {
             spacing: 5px;
@@ -394,15 +542,14 @@ if __name__ == "__main__":
         QCheckBox::indicator {
             width: 13px;
             height: 13px;
-            border: 1px solid #231901;
+            border: 1px solid #080c26; /* --secondary */
             border-radius: 3px;
-            background-color: #01242d;
+            background-color: #110804; /* --background */
         }
         QCheckBox::indicator:checked {
-            background-color: #fc5122;
+            background-color: #2cceb9; /* --accent */
         }
     """)
-
     overlay = Overlay()
     config_menu = MainWindow(overlay)
     config_menu.show()

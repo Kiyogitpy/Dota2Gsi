@@ -2,6 +2,7 @@ import keyboard
 from subprocess import Popen
 from pygame import mixer, time
 import os
+import json
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -12,10 +13,12 @@ audio_file_path = os.path.join(audio_folder, 'goodbye.wav')
 
 mixer.init()
 
-with open('config.txt', 'r') as file:
-    lines = file.readlines() # Read all lines into a list
-    volume_percent = int(lines[8].strip()) # Get the value from the 7th line (index 6)
-    mixer.music.set_volume(volume_percent / 100) # Set the volume in Pygame as a fraction
+try:
+    with open('config.json', 'r') as config_file:
+            config = json.load(config_file)
+            mixer.music.set_volume = config['volume_percent'] / 100
+except (json.JSONDecodeError, KeyError):
+    print("Error reading config.json, using default values")
 
 # List to keep track of all subprocesses
 processes = []
@@ -39,8 +42,8 @@ def terminate_processes():
 keyboard.add_hotkey('page down', terminate_processes)
 
 # Run your scripts as subprocesses and append them to the processes list
-processes.append(Popen(['python', 'Menu.py']))
-processes.append(Popen(['python', 'dota2gsi.py']))
+processes.append(Popen(['python', 'menu.py']))
+processes.append(Popen(['python', 'flask_server.py']))
 
 # Keep the script running
 keyboard.wait()
