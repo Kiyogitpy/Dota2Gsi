@@ -15,11 +15,9 @@ def handle_post():
             seconds = clock_time % 60
             minutes = clock_time // 60
 
-            # Call the function to process the game data
             response = process_game_data(minutes, seconds)
-            return response if response else "OK"
-
+            return str(response) if response else "OK"
     return "OK"
 
 if __name__ == '__main__':
-    app.run(port=3000)
+    app.run(port=3000,debug=False)

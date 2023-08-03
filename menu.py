@@ -1,13 +1,19 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QIcon
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QSlider, QGridLayout
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QKeySequence
+from PyQt5.QtCore import Qt, QSize, QPoint, QPropertyAnimation, QEasingCurve, QTimer, QSequentialAnimationGroup, pyqtSlot
+from PyQt5.QtWidgets import QSlider, QGridLayout, QApplication, QLabel, QWidget
 import keyboard  # import the keyboard package
 from time import sleep
 import os
 from pygame import mixer
+import sys
 import json
 
+app = QApplication(sys.argv)
+icon_path = os.path.abspath("Audio/retush.png")
+app_icon = QIcon()
+app_icon.addFile(icon_path, QSize(16, 16))
+app.setWindowIcon(app_icon)
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -21,68 +27,7 @@ last_exprune_played = -1
 last_thirdsound_played = -1
 bounty_rune_played = -1
 power_rune_played = -1
-
-
-def process_game_data(minutes, seconds):
-    global last_stack_played
-    global last_exprune_played
-    global last_thirdsound_played
-    global bounty_rune_played
-    global power_rune_played           
-
-    try:
-        with open('config.json', 'r') as file:
-            config_data = json.load(file)
-            power_rune_enabled = config_data['power_checked']
-            bounty_rune_enabled = config_data['bounty_checkbox']
-            stack_alert_enabled = config_data['stack_checkbox']
-            exprune_alert_enabled = config_data['exprune_checkbox']
-            thirdsound_alert_enabled = config_data['thirdsound_checkbox']
-            return power_rune_enabled, bounty_rune_enabled, stack_alert_enabled, exprune_alert_enabled, thirdsound_alert_enabled
-    except Exception as e:
-        print(f'An error occurred while loading the config: {str(e)}')
-        # Add any default values or handling you want here
-    if not mute:              
-        if stack_alert_enabled  and minutes >= 1 and seconds == 40 and minutes != last_stack_played:
-            print("Playing stack.wav")
-            mixer.music.load(os.path.join(audio_folder, 'stack.wav'))
-            mixer.music.play()
-            last_stack_played = minutes
-            return "OK"
-
-        # Express Rune alert
-        if exprune_alert_enabled and (minutes == 6 and seconds == 30 and minutes != last_exprune_played) or \
-        (minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30 and minutes != last_exprune_played):
-            print("Playing exprune.wav")
-            mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
-            mixer.music.play()
-            last_exprune_played = minutes
-            return "OK"
-
-        # lotus alert
-        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes != last_thirdsound_played:
-            print("Playing lotus.wav")
-            mixer.music.load(os.path.join(audio_folder, 'lotus.wav'))
-            mixer.music.play()
-            last_thirdsound_played = minutes
-            return "OK"
-        
-        # bounty alert
-        if bounty_rune_enabled and (minutes - 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
-            print("Playing bounty.wav")
-            mixer.music.load(os.path.join(audio_folder, 'bounty.wav'))
-            mixer.music.play()
-            bounty_rune_played = minutes
-            return "OK"
-        
-        # power alert
-        if power_rune_enabled and (minutes - 5) % 2 == 0 and seconds == 51 and minutes != power_rune_played:
-            print("Playing power.wav")
-            mixer.music.load(os.path.join(audio_folder, 'power.wav'))
-            mixer.music.play()
-            power_rune_played = minutes
-            return "OK"
-
+pull_played = -1
 
 class DraggableWidget(QtWidgets.QWidget):
     def __init__(self, on_move_callback=None):
@@ -100,6 +45,153 @@ class DraggableWidget(QtWidgets.QWidget):
         # Call the callback if provided
         if self.on_move_callback:
             self.on_move_callback()
+
+def process_game_data(minutes, seconds):
+    global last_stack_played
+    global last_exprune_played
+    global last_thirdsound_played
+    global bounty_rune_played
+    global power_rune_played      
+    global pull_played    
+    global mute
+
+    mixer.init()
+
+    with open('config.json', 'r') as file:
+        settings = json.load(file)
+    
+    # Assign the values from the JSON to the variables
+    stack_alert_enabled = settings['stack_checkbox']
+    exprune_alert_enabled = settings['exprune_checkbox']
+    thirdsound_alert_enabled = settings['thirdsound_checkbox']
+    bounty_rune_enabled = settings['bounty_checkbox']
+    power_rune_enabled = settings['power_checked']
+    pull_alert_enabled = settings['pull_checkbox']
+    # Define the settings
+
+    defaultSettings = {
+        'fadeInTime': 0.3,
+        'fadeOutTime': 0.7,
+        'maxAlpha': 0.7,
+        'animScale': 1.5,
+        'iconSize': 200,
+        'holdTime': 10,
+    }
+    images = {
+        'stack': os.path.join(audio_folder, "stack.png"),
+        'exprune': os.path.join(audio_folder, "exprune.png"),
+        'lotus': os.path.join(audio_folder, "lotus.png"),
+        'bounty': os.path.join(audio_folder, "bounty.png"),
+        'power': os.path.join(audio_folder, "power.png"),
+        'pull': os.path.join(audio_folder, "pull.png"),
+    }
+
+    def play_overlay_and_sound(sound_file, image_path, last_played_variable):
+        print(f"Playing {sound_file}")
+        mixer.music.load(os.path.join(audio_folder, sound_file))
+        mixer.music.play()
+        overlay = Overlay_pulse(image_path, defaultSettings)
+        overlay.start_animation()
+        return minutes
+    
+    if not mute:
+        if stack_alert_enabled and minutes >= 1 and seconds == 40 and minutes != last_stack_played:
+            last_stack_played = play_overlay_and_sound('stack.wav', images['stack'], last_stack_played)
+            return "OK"
+
+        # Express Rune alert
+        if exprune_alert_enabled and (minutes == 6 and seconds == 30 and minutes != last_exprune_played) or \
+        (minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30 and minutes != last_exprune_played):
+            last_exprune_played = play_overlay_and_sound('exprune.wav', images['exprune'], last_exprune_played)
+            return "OK"
+
+        # lotus alert
+        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes != last_thirdsound_played:
+            last_thirdsound_played = play_overlay_and_sound('lotus.wav', images['lotus'], last_thirdsound_played)
+            return "OK"
+        
+        # bounty alert
+        if bounty_rune_enabled and (minutes - 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
+            bounty_rune_played = play_overlay_and_sound('bounty.wav', images['bounty'], bounty_rune_played)
+            return "OK"
+        
+        # power alert
+        if power_rune_enabled and (minutes - 5) % 2 == 0 and seconds == 51 and minutes != power_rune_played:
+            power_rune_played = play_overlay_and_sound('power.wav', images['power'], power_rune_played)
+            return "OK"
+    
+        # pull alert
+        if pull_alert_enabled and seconds == 5 and minutes != pull_played:
+            pull_played = play_overlay_and_sound('power.wav', images['power'], pull_played)
+            return "OK"
+    return "OK"
+
+class Overlay_pulse(QWidget):
+    instances = []  # List to hold references to instances
+
+    def __init__(self, image_path, settings):
+        super().__init__()
+        Overlay_pulse.instances.append(self)  # Add reference to the list
+        self.settings = settings
+        # ... rest of your code here ...
+        super().__init__()
+        self.settings = settings
+        # Set transparency and click-through
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        
+        # Create a QLabel to hold the PNG image
+        self.image_label = QLabel(self)
+        pixmap = QPixmap(image_path).scaled(settings['iconSize'], settings['iconSize'], Qt.KeepAspectRatio)
+        self.image_label.setPixmap(pixmap)
+
+        # Set the size to fit the image
+        self.resize(pixmap.size())
+
+        # Center the window on the screen
+        screen_center = QApplication.desktop().screen().rect().center()
+        self.move(screen_center - QPoint(self.width() // 2, self.height() // 2))
+
+        # Set the initial window opacity to 0
+        self.setWindowOpacity(0)
+
+        # Create a sequence of animations
+        self.animation_group = QSequentialAnimationGroup()
+
+        # Fade-in animation
+        self.fade_in_animation = QPropertyAnimation(self, b'windowOpacity')
+        self.fade_in_animation.setDuration(int(self.settings['fadeInTime'] * 1000))
+        self.fade_in_animation.setStartValue(0) 
+        self.fade_in_animation.setEndValue(self.settings['maxAlpha'])
+        self.fade_in_animation.setEasingCurve(QEasingCurve.InOutQuad)
+
+        # Fade-out animation
+        self.fade_out_animation = QPropertyAnimation(self, b'windowOpacity')
+        self.fade_out_animation.setDuration(int(self.settings['fadeOutTime'] * 1000))
+        self.fade_out_animation.setStartValue(self.settings['maxAlpha'])
+        self.fade_out_animation.setEndValue(0)
+        self.fade_out_animation.setEasingCurve(QEasingCurve.InOutQuad)
+
+        # Add the fade-in and fade-out animations to the sequence
+        self.animation_group.addAnimation(self.fade_in_animation)
+        self.animation_group.addPause(self.settings['holdTime'] * 1000) # Optional pause between animations
+        self.animation_group.addAnimation(self.fade_out_animation)
+
+        # Show the window
+        self.show()
+
+    def start_animation(self):
+        print("Starting animation")
+        self.setWindowOpacity(0)
+        self.animation_group.finished.connect(self.on_animation_finished)  # Connect signal
+        self.animation_group.stop()
+        self.animation_group.start()
+        print("animation finished")
+
+    @QtCore.pyqtSlot()
+    def on_animation_finished(self):
+        Overlay_pulse.instances.remove(self)  # Remove reference from the list
+        self.deleteLater()  # Schedule the object for deletion
 
 
 class Overlay(QtWidgets.QWidget):
@@ -298,26 +390,36 @@ class MainWindow(DraggableWidget):
         grid_layout.addWidget(self.show_hide_button, 1, 1)
 
         layout.addLayout(grid_layout)
+        
+        #checkboxes
+        checkbox_layout = QGridLayout()
 
         self.bounty_checkbox = QtWidgets.QCheckBox('Enable Bounty Rune', self)
         self.bounty_checkbox.setChecked(True)  # Initially checked
-        layout.addWidget(self.bounty_checkbox)
+        checkbox_layout.addWidget(self.bounty_checkbox, 0, 0)  # Add to grid layout
 
         self.power_checked = QtWidgets.QCheckBox('Enable Power rune', self)
         self.power_checked.setChecked(True)  # Initially checked
-        layout.addWidget(self.power_checked)
+        checkbox_layout.addWidget(self.power_checked, 0, 1)  # Add to grid layout
 
         self.stack_checkbox = QtWidgets.QCheckBox('Enable Stack Alert', self)
         self.stack_checkbox.setChecked(True)  # Initially checked
-        layout.addWidget(self.stack_checkbox)
+        checkbox_layout.addWidget(self.stack_checkbox, 1, 0)  # Add to grid layout
 
         self.exprune_checkbox = QtWidgets.QCheckBox('Enable Express Rune Alert', self)
         self.exprune_checkbox.setChecked(True)  # Initially checked
-        layout.addWidget(self.exprune_checkbox)
+        checkbox_layout.addWidget(self.exprune_checkbox, 1, 1)  # Add to grid layout
 
         self.thirdsound_checkbox = QtWidgets.QCheckBox('Enable Lotus Alert', self)
         self.thirdsound_checkbox.setChecked(True)  # Initially checked
-        layout.addWidget(self.thirdsound_checkbox)
+        checkbox_layout.addWidget(self.thirdsound_checkbox, 0, 2)  # Add to grid layout
+
+        self.pull_checkbox = QtWidgets.QCheckBox('Enable pull alert', self)
+        self.pull_checkbox.setChecked(True)  # Initially checked
+        checkbox_layout.addWidget(self.pull_checkbox, 1, 2)  # Add to grid layout
+
+        layout.addLayout(checkbox_layout)  # Add the grid layout to the main layout
+
 
         # Connect checkbox state change to configuration saving
         self.bounty_checkbox.stateChanged.connect(self.save_config)
@@ -325,11 +427,13 @@ class MainWindow(DraggableWidget):
         self.stack_checkbox.stateChanged.connect(self.save_config)
         self.exprune_checkbox.stateChanged.connect(self.save_config)
         self.thirdsound_checkbox.stateChanged.connect(self.save_config)
+        self.pull_checkbox.stateChanged.connect(self.save_config)
 
         # Connect the buttons' clicked signals to save configuration as well
         self.rosh_timer_button.clicked.connect(self.save_config)
         self.chat_timer_button.clicked.connect(self.save_config)
         self.mute_keybind_button.clicked.connect(self.save_config)
+        self.show_hide_button.clicked.connect(self.save_config)
         
 
         # Create a Volume Slider
@@ -357,12 +461,12 @@ class MainWindow(DraggableWidget):
         try:
             with open('config.json', 'r') as file:
                 config_data = json.load(file)
-
                 self.bounty_checkbox.setChecked(config_data['bounty_checkbox'])
                 self.power_checked.setChecked(config_data['power_checked'])
                 self.stack_checkbox.setChecked(config_data['stack_checkbox'])
                 self.exprune_checkbox.setChecked(config_data['exprune_checkbox'])
                 self.thirdsound_checkbox.setChecked(config_data['thirdsound_checkbox'])
+                self.pull_checkbox.setChecked(config_data['pull_checkbox'])
                 self.mute_keybind = config_data['mute_keybind']
                 self.rosh_keybind = config_data['rosh_keybind']
                 self.chat_keybind = config_data['chat_keybind']
@@ -394,6 +498,7 @@ class MainWindow(DraggableWidget):
             'stack_checkbox': self.stack_checkbox.isChecked(),
             'exprune_checkbox': self.exprune_checkbox.isChecked(),
             'thirdsound_checkbox': self.thirdsound_checkbox.isChecked(),
+            'pull_checkbox': self.pull_checkbox.isChecked(),
             'mute_keybind': getattr(self, 'mute_keybind', 'm'),
             'rosh_keybind': getattr(self, 'rosh_keybind', 'f21'),
             'chat_keybind': getattr(self, 'chat_keybind', 'f22'),
@@ -483,18 +588,12 @@ class MainWindow(DraggableWidget):
                 mixer.music.set_volume(volume_percent)
                 mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
                 mute = False # Fixed line
-                print(volume_percent)
+                print("unmuting")
 
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-    icon_path = os.path.abspath("Audio/retush.png")
-    app_icon = QIcon()
-    app_icon.addFile(icon_path, QSize(16, 16))
-    app.setWindowIcon(app_icon)
-
-    mixer.init()
     # Global stylesheet for the application
+    mixer.init()
     app.setStyleSheet("""
         * {
             font-family: Arial, sans-serif;
@@ -550,7 +649,8 @@ if __name__ == "__main__":
             background-color: #2cceb9; /* --accent */
         }
     """)
+
     overlay = Overlay()
     config_menu = MainWindow(overlay)
     config_menu.show()
-    app.exec_()
+    sys.exit(app.exec_()) # Start the application's main loop
