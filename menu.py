@@ -106,7 +106,7 @@ def process_game_data(minutes, seconds):
             return "OK"
 
         # lotus alert
-        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes != last_thirdsound_played:
+        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes < 10 and minutes != last_thirdsound_played:
             last_thirdsound_played = play_overlay_and_sound('lotus.wav', images['lotus'], last_thirdsound_played)
             return "OK"
         
@@ -121,8 +121,8 @@ def process_game_data(minutes, seconds):
             return "OK"
     
         # pull alert
-        if pull_alert_enabled and seconds == 5 and minutes != pull_played:
-            pull_played = play_overlay_and_sound('power.wav', images['power'], pull_played)
+        if pull_alert_enabled and (minutes - 1) % 2 == 0 and seconds == 10 and minutes < 10 and minutes != pull_played:
+            pull_played = play_overlay_and_sound('pull.wav', images['pull'], pull_played)
             return "OK"
     return "OK"
 
@@ -581,12 +581,15 @@ class MainWindow(DraggableWidget):
         if hasattr(self, "mute_keybind") and keyboard.is_pressed(self.mute_keybind):
             if mute == False:
                 mixer.music.load(os.path.join(audio_folder, 'muted.wav'))
+                mixer.music.play()
+                sleep(1)
                 mixer.music.set_volume(0)
                 mute = True
                 print("muting")
             elif mute == True:
                 mixer.music.set_volume(volume_percent)
                 mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
+                mixer.music.play()
                 mute = False # Fixed line
                 print("unmuting")
 

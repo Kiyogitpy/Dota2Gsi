@@ -1,5 +1,6 @@
 from flask import Flask, request
-from menu import process_game_data
+from game_data import process_game_data
+import logging
 
 app = Flask(__name__)
 
@@ -20,4 +21,6 @@ def handle_post():
     return "OK"
 
 if __name__ == '__main__':
-    app.run(port=3000,debug=False)
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    app.run(port=3000)
