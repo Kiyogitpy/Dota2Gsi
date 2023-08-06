@@ -81,10 +81,9 @@ class Overlay_pulse(QWidget):
 
 
 
+overlay = Overlay_pulse() 
+has_run = 0
 
-
-overlay = Overlay_pulse()  # Replace with your image path
-    
 @app.route('/', methods=['POST'])
 def handle_post():
     global seconds 
@@ -92,21 +91,21 @@ def handle_post():
 
     data = request.get_json()
     
-    # Check if the 'map' key exists in the data
     if 'map' in data and 'clock_time' in data['map']:
         clock_time = data['map']['clock_time']
 
-        if clock_time >= 0:  # Only consider times after the game has started
+        if clock_time >= 0: 
             seconds = clock_time % 60
             minutes = clock_time // 60
 
-            # Check if both minutes and seconds equal 1
-            if seconds == 10 or seconds == 20 or seconds == 30 or seconds == 40 or seconds == 50 or seconds == 59:
+            if seconds == 10 or seconds == 20 or seconds == 30 or seconds == 40 or seconds == 50 or seconds == 59 and has_run != seconds:
                 overlay.signal_update_image.emit("Audio/stack.png")
                 overlay.signal_start_animation.emit() 
-            elif seconds == 5 or seconds == 15 or seconds == 25 or seconds == 35 or seconds == 45 or seconds == 55:
+                has_run != seconds
+            elif seconds == 5 or seconds == 15 or seconds == 25 or seconds == 35 or seconds == 45 or seconds == 55 and has_run != seconds:
                 overlay.signal_update_image.emit("Audio/pull.png")
                 overlay.signal_start_animation.emit() 
+                has_run = seconds
             response = process_game_data(minutes, seconds)
             return str(response) if response else "OK"
     return "OK"
