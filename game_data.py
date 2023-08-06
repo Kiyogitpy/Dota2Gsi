@@ -20,7 +20,6 @@ images = {
 
 
 def play_overlay_and_sound(sound_file, image_path, key, minutes):
-    global overlay_window
     print(f"Playing {sound_file}")
     mixer.music.load(os.path.join(audio_folder, sound_file))
     mixer.music.play()
@@ -31,7 +30,6 @@ def play_overlay_and_sound(sound_file, image_path, key, minutes):
 def process_game_data(minutes, seconds):
     global last_played
     global mute
-    print(minutes,seconds)
     mixer.init()
 
     with open('config.json', 'r') as file:
@@ -45,7 +43,6 @@ def process_game_data(minutes, seconds):
             (settings['bounty_checkbox'] and (minutes - 2) % 3 == 0 and seconds == 45, None, None, 'bounty'),
             (settings['power_checked'] and (minutes - 5) % 2 == 0 and seconds == 51, None, None, 'power'),
             (settings['pull_checkbox'] and (minutes - 1) % 2 == 0 and seconds == 10 and minutes < 10, None, None, 'pull'),
-            (settings['pull_checkbox'] and seconds == 3 and minutes < 10, None, None, 'pull'), #debugger
         ]
 
         for alert in alerts:

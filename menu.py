@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QKeySequence
-from PyQt5.QtCore import Qt, QSize, QPoint, QPropertyAnimation, QEasingCurve, QTimer, QSequentialAnimationGroup, pyqtSlot
-from PyQt5.QtWidgets import QSlider, QGridLayout, QApplication, QLabel, QWidget
+from PyQt5.QtGui import QPixmap, QImage, QIcon
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import QSlider, QGridLayout, QApplication
 import keyboard  # import the keyboard package
 from time import sleep
 import os
@@ -9,11 +9,7 @@ from pygame import mixer
 import sys
 import json
 
-app = QApplication(sys.argv)
-icon_path = os.path.abspath("Audio/retush.png")
-app_icon = QIcon()
-app_icon.addFile(icon_path, QSize(16, 16))
-app.setWindowIcon(app_icon)
+
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -22,12 +18,6 @@ current_directory = os.getcwd()
 audio_folder = os.path.join(current_directory, 'Audio')
 
 mute = False
-last_stack_played = -1
-last_exprune_played = -1
-last_thirdsound_played = -1
-bounty_rune_played = -1
-power_rune_played = -1
-pull_played = -1
 
 class DraggableWidget(QtWidgets.QWidget):
     def __init__(self, on_move_callback=None):
@@ -45,153 +35,6 @@ class DraggableWidget(QtWidgets.QWidget):
         # Call the callback if provided
         if self.on_move_callback:
             self.on_move_callback()
-
-def process_game_data(minutes, seconds):
-    global last_stack_played
-    global last_exprune_played
-    global last_thirdsound_played
-    global bounty_rune_played
-    global power_rune_played      
-    global pull_played    
-    global mute
-
-    mixer.init()
-
-    with open('config.json', 'r') as file:
-        settings = json.load(file)
-    
-    # Assign the values from the JSON to the variables
-    stack_alert_enabled = settings['stack_checkbox']
-    exprune_alert_enabled = settings['exprune_checkbox']
-    thirdsound_alert_enabled = settings['thirdsound_checkbox']
-    bounty_rune_enabled = settings['bounty_checkbox']
-    power_rune_enabled = settings['power_checked']
-    pull_alert_enabled = settings['pull_checkbox']
-    # Define the settings
-
-    defaultSettings = {
-        'fadeInTime': 0.3,
-        'fadeOutTime': 0.7,
-        'maxAlpha': 0.7,
-        'animScale': 1.5,
-        'iconSize': 200,
-        'holdTime': 10,
-    }
-    images = {
-        'stack': os.path.join(audio_folder, "stack.png"),
-        'exprune': os.path.join(audio_folder, "exprune.png"),
-        'lotus': os.path.join(audio_folder, "lotus.png"),
-        'bounty': os.path.join(audio_folder, "bounty.png"),
-        'power': os.path.join(audio_folder, "power.png"),
-        'pull': os.path.join(audio_folder, "pull.png"),
-    }
-
-    def play_overlay_and_sound(sound_file, image_path, last_played_variable):
-        print(f"Playing {sound_file}")
-        mixer.music.load(os.path.join(audio_folder, sound_file))
-        mixer.music.play()
-        overlay = Overlay_pulse(image_path, defaultSettings)
-        overlay.start_animation()
-        return minutes
-    
-    if not mute:
-        if stack_alert_enabled and minutes >= 1 and seconds == 40 and minutes != last_stack_played:
-            last_stack_played = play_overlay_and_sound('stack.wav', images['stack'], last_stack_played)
-            return "OK"
-
-        # Express Rune alert
-        if exprune_alert_enabled and (minutes == 6 and seconds == 30 and minutes != last_exprune_played) or \
-        (minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30 and minutes != last_exprune_played):
-            last_exprune_played = play_overlay_and_sound('exprune.wav', images['exprune'], last_exprune_played)
-            return "OK"
-
-        # lotus alert
-        if thirdsound_alert_enabled and(minutes - 2) % 3 == 0 and seconds == 50 and minutes < 10 and minutes != last_thirdsound_played:
-            last_thirdsound_played = play_overlay_and_sound('lotus.wav', images['lotus'], last_thirdsound_played)
-            return "OK"
-        
-        # bounty alert
-        if bounty_rune_enabled and (minutes - 2) % 3 == 0 and seconds == 45 and minutes != bounty_rune_played:
-            bounty_rune_played = play_overlay_and_sound('bounty.wav', images['bounty'], bounty_rune_played)
-            return "OK"
-        
-        # power alert
-        if power_rune_enabled and (minutes - 5) % 2 == 0 and seconds == 51 and minutes != power_rune_played:
-            power_rune_played = play_overlay_and_sound('power.wav', images['power'], power_rune_played)
-            return "OK"
-    
-        # pull alert
-        if pull_alert_enabled and (minutes - 1) % 2 == 0 and seconds == 10 and minutes < 10 and minutes != pull_played:
-            pull_played = play_overlay_and_sound('pull.wav', images['pull'], pull_played)
-            return "OK"
-    return "OK"
-
-class Overlay_pulse(QWidget):
-    instances = []  # List to hold references to instances
-
-    def __init__(self, image_path, settings):
-        super().__init__()
-        Overlay_pulse.instances.append(self)  # Add reference to the list
-        self.settings = settings
-        # ... rest of your code here ...
-        super().__init__()
-        self.settings = settings
-        # Set transparency and click-through
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        
-        # Create a QLabel to hold the PNG image
-        self.image_label = QLabel(self)
-        pixmap = QPixmap(image_path).scaled(settings['iconSize'], settings['iconSize'], Qt.KeepAspectRatio)
-        self.image_label.setPixmap(pixmap)
-
-        # Set the size to fit the image
-        self.resize(pixmap.size())
-
-        # Center the window on the screen
-        screen_center = QApplication.desktop().screen().rect().center()
-        self.move(screen_center - QPoint(self.width() // 2, self.height() // 2))
-
-        # Set the initial window opacity to 0
-        self.setWindowOpacity(0)
-
-        # Create a sequence of animations
-        self.animation_group = QSequentialAnimationGroup()
-
-        # Fade-in animation
-        self.fade_in_animation = QPropertyAnimation(self, b'windowOpacity')
-        self.fade_in_animation.setDuration(int(self.settings['fadeInTime'] * 1000))
-        self.fade_in_animation.setStartValue(0) 
-        self.fade_in_animation.setEndValue(self.settings['maxAlpha'])
-        self.fade_in_animation.setEasingCurve(QEasingCurve.InOutQuad)
-
-        # Fade-out animation
-        self.fade_out_animation = QPropertyAnimation(self, b'windowOpacity')
-        self.fade_out_animation.setDuration(int(self.settings['fadeOutTime'] * 1000))
-        self.fade_out_animation.setStartValue(self.settings['maxAlpha'])
-        self.fade_out_animation.setEndValue(0)
-        self.fade_out_animation.setEasingCurve(QEasingCurve.InOutQuad)
-
-        # Add the fade-in and fade-out animations to the sequence
-        self.animation_group.addAnimation(self.fade_in_animation)
-        self.animation_group.addPause(self.settings['holdTime'] * 1000) # Optional pause between animations
-        self.animation_group.addAnimation(self.fade_out_animation)
-
-        # Show the window
-        self.show()
-
-    def start_animation(self):
-        print("Starting animation")
-        self.setWindowOpacity(0)
-        self.animation_group.finished.connect(self.on_animation_finished)  # Connect signal
-        self.animation_group.stop()
-        self.animation_group.start()
-        print("animation finished")
-
-    @QtCore.pyqtSlot()
-    def on_animation_finished(self):
-        Overlay_pulse.instances.remove(self)  # Remove reference from the list
-        self.deleteLater()  # Schedule the object for deletion
 
 
 class Overlay(QtWidgets.QWidget):
@@ -597,6 +440,7 @@ class MainWindow(DraggableWidget):
 if __name__ == "__main__":
     # Global stylesheet for the application
     mixer.init()
+    app = QApplication(sys.argv)
     app.setStyleSheet("""
         * {
             font-family: Arial, sans-serif;
@@ -652,7 +496,11 @@ if __name__ == "__main__":
             background-color: #2cceb9; /* --accent */
         }
     """)
-
+    
+    icon_path = os.path.abspath("Audio/retush.png")
+    app_icon = QIcon()
+    app_icon.addFile(icon_path, QSize(16, 16))
+    app.setWindowIcon(app_icon)
     overlay = Overlay()
     config_menu = MainWindow(overlay)
     config_menu.show()

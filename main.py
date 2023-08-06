@@ -3,8 +3,6 @@ from subprocess import Popen
 from pygame import mixer, time
 import os
 import json
-import sys
-
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -44,9 +42,9 @@ def terminate_processes():
 keyboard.add_hotkey('page down', terminate_processes)
 
 # Run your scripts as subprocesses and append them to the processes list
-processes.append(Popen(['python', 'client.py']))
 processes.append(Popen(['python', 'flask_server.py']))
 processes.append(Popen(['python', 'game_data.py']))
+processes.append(Popen(['python', 'menu.py']))
 
 # Keep the script running
 keyboard.wait()
