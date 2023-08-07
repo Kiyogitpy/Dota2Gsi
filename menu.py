@@ -347,11 +347,13 @@ class MainWindow(DraggableWidget):
             'chat_keybind': getattr(self, 'chat_keybind', 'f22'),
             'volume_percent': self.volume_slider.value(),
             'show_hide_keybind': getattr(self, 'show_hide_keybind', 'home'),
-            'position': [self.x(), self.y()]
+            'position': [self.x(), self.y()],
         }
 
+        
+
         with open('config.json', 'w') as file:
-            json.dump(config_data, file)
+            json.dump(config_data, file, indent=4)
 
         print("Configuration saved!")
 

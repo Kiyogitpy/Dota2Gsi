@@ -1,5 +1,4 @@
 from flask import Flask, request
-from game_data import process_game_data
 import logging
 from PyQt5.QtWidgets import QWidget, QLabel, QApplication
 from PyQt5.QtGui import QPixmap
@@ -7,6 +6,58 @@ from PyQt5.QtCore import QPoint, QPropertyAnimation, QEasingCurve, QSequentialAn
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 import threading
+import os
+import json
+from pygame import mixer
+
+current_directory = os.getcwd()
+audio_folder = os.path.join(current_directory, 'Audio')
+
+mute = False
+last_played = {"stack": -1, "exprune": -1, "thirdsound": -1, "bounty": -1, "power": -1, "pull": -1}
+
+images = {
+    'stack': os.path.join(audio_folder, 'stack.png'),
+    'exprune': os.path.join(audio_folder, 'exprune.png'),
+    'lotus': os.path.join(audio_folder, 'lotus.png'),
+    'bounty': os.path.join(audio_folder, 'bounty.png'),
+    'power': os.path.join(audio_folder, 'power.png'),
+    'pull': os.path.join(audio_folder, 'pull.png'),
+}
+
+
+def play_overlay_and_sound(sound_file, image_path, key, minutes):
+    print(f"Playing {sound_file}")
+    mixer.music.load(os.path.join(audio_folder, sound_file))
+    mixer.music.play()
+    last_played[key] = minutes
+    return os.path.join(audio_folder, f'{key}.png')
+
+
+def process_game_data(minutes, seconds):
+    global last_played
+    global mute
+    mixer.init()
+
+    with open('config.json', 'r') as file:
+        settings = json.load(file)
+
+    if not mute:
+        alerts = [
+            (settings['stack_checkbox'] and minutes >= 1 and seconds == 40, None, None, 'stack'),
+            (settings['exprune_checkbox'] and minutes == 6 and seconds == 30 or minutes > 6 and (minutes - 6) % 7 == 0 and seconds == 30, None, None, 'exprune'),
+            (settings['thirdsound_checkbox'] and (minutes - 2) % 3 == 0 and seconds == 50 and minutes < 10, None, None, 'lotus'),
+            (settings['bounty_checkbox'] and (minutes - 2) % 3 == 0 and seconds == 45, None, None, 'bounty'),
+            (settings['power_checked'] and (minutes - 5) % 2 == 0 and seconds == 51, None, None, 'power'),
+            (settings['pull_checkbox'] and (minutes - 1) % 2 == 0 and seconds == 10 and minutes < 10, None, None, 'pull'),
+            (settings['pull_checkbox'] and seconds == 10 or seconds == 20 or seconds == 30 or seconds == 40 or seconds == 50 or seconds == 59, None, None, 'pull'),
+        ]
+
+        for alert in alerts:
+            if alert[0] and (alert[1] is None or minutes >= alert[1]) and (alert[2] is None or seconds == alert[2]) and minutes != last_played[alert[3]]:
+                return play_overlay_and_sound(f'{alert[3]}.wav', images[alert[3]], alert[3], minutes)
+
+    return "OK"
 
 seconds = 0
 minutes = 0
@@ -30,7 +81,7 @@ class Overlay_pulse(QWidget):
         screen_center = QApplication.desktop().screen().rect().center()
         self.move(screen_center - QPoint(self.width() // 2, self.height() // 2))
         # Initialize without an image
-        self.set_image("Audio/pull.png")
+        self.set_image("")
         
         # Create a sequence of animations
         self.animation_group = QSequentialAnimationGroup()
@@ -74,10 +125,8 @@ class Overlay_pulse(QWidget):
             self.image_label.setGeometry(label_x, label_y, scaled_pixmap.width(), scaled_pixmap.height())
 
     def start_animation(self):
-        print("animation started")
         self.animation_group.start()
         print(f"Animation state: {self.animation_group.state()}")
-        print("animation ended")
 
 
 
@@ -88,7 +137,7 @@ has_run = 0
 def handle_post():
     global seconds 
     global minutes
-
+    global has_run
     data = request.get_json()
     
     if 'map' in data and 'clock_time' in data['map']:
@@ -98,15 +147,10 @@ def handle_post():
             seconds = clock_time % 60
             minutes = clock_time // 60
 
-            if seconds == 10 or seconds == 20 or seconds == 30 or seconds == 40 or seconds == 50 or seconds == 59 and has_run != seconds:
-                overlay.signal_update_image.emit("Audio/stack.png")
-                overlay.signal_start_animation.emit() 
-                has_run != seconds
-            elif seconds == 5 or seconds == 15 or seconds == 25 or seconds == 35 or seconds == 45 or seconds == 55 and has_run != seconds:
-                overlay.signal_update_image.emit("Audio/pull.png")
-                overlay.signal_start_animation.emit() 
-                has_run = seconds
             response = process_game_data(minutes, seconds)
+            if response and response != "OK" and has_run != seconds:
+                overlay.signal_update_image.emit(response)
+                overlay.signal_start_animation.emit() 
             return str(response) if response else "OK"
     return "OK"
 

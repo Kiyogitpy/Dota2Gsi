@@ -1,1 +1,17 @@
-{"bounty_checkbox": false, "power_checked": false, "stack_checkbox": true, "exprune_checkbox": true, "thirdsound_checkbox": true, "pull_checkbox": true, "mute_keybind": "m", "rosh_keybind": "f21", "chat_keybind": "f22", "volume_percent": 100, "show_hide_keybind": "home", "position": [1712, 236]}
+{
+    "bounty_checkbox": false,
+    "power_checked": false,
+    "stack_checkbox": true,
+    "exprune_checkbox": true,
+    "thirdsound_checkbox": true,
+    "pull_checkbox": false,
+    "mute_keybind": "m",
+    "rosh_keybind": "q",
+    "chat_keybind": "q",
+    "volume_percent": 100,
+    "show_hide_keybind": "home",
+    "position": [
+        1083,
+        264
+    ]
+}
