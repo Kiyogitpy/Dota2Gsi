@@ -430,13 +430,12 @@ class MainWindow(DraggableWidget):
                 sleep(1)
                 mixer.music.set_volume(0)
                 mute = True
-                print("muting")
-            elif mute == True:
+            else:
                 mixer.music.set_volume(volume_percent)
                 mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
                 mixer.music.play()
                 mute = False # Fixed line
-                print("unmuting")
+
 
 
 if __name__ == "__main__":

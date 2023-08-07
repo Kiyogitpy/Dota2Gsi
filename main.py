@@ -43,7 +43,7 @@ keyboard.add_hotkey('page down', terminate_processes)
 
 # Run your scripts as subprocesses and append them to the processes list
 processes.append(Popen(['python', 'flask_server.py']))
-processes.append(Popen(['python', 'client.py']))
+processes.append(Popen(['python', 'menu.py']))
 
 # Keep the script running
 keyboard.wait()
