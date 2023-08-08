@@ -36,13 +36,12 @@ def play_overlay_and_sound(sound_file, image_path, key, minutes):
 
 def process_game_data(minutes, seconds):
     global last_played
-    global mute
     mixer.init()
 
     with open('config.json', 'r') as file:
         settings = json.load(file)
 
-    if not mute:
+    if not settings['muted']:
         
         alerts = [
             (settings['stack_checkbox'] and minutes >= 1 and seconds == 40, 'stack'),

@@ -9,9 +9,10 @@
     "rosh_keybind": "f21",
     "chat_keybind": "f22",
     "volume_percent": 100,
-    "show_hide_keybind": "l",
+    "show_hide_keybind": "home",
+    "muted": false,
     "position": [
-        1488,
-        466
+        1333,
+        408
     ]
 }

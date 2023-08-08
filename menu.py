@@ -347,6 +347,7 @@ class MainWindow(DraggableWidget):
             'chat_keybind': getattr(self, 'chat_keybind', 'f22'),
             'volume_percent': self.volume_slider.value(),
             'show_hide_keybind': getattr(self, 'show_hide_keybind', 'home'),
+            "muted": mute,
             'position': [self.x(), self.y()],
         }
 
@@ -415,7 +416,7 @@ class MainWindow(DraggableWidget):
 
     def check_key_press(self):
         global mute
-        with open("config.json", "r") as file:
+        with open("config.json", "r") as file:  
             config_data = json.load(file)
             volume_percent = config_data["volume_percent"] / 100
         if hasattr(self, 'show_hide_keybind') and keyboard.is_pressed(self.show_hide_keybind):
@@ -427,14 +428,17 @@ class MainWindow(DraggableWidget):
             if mute == False:
                 mixer.music.load(os.path.join(audio_folder, 'muted.wav'))
                 mixer.music.play()
-                sleep(1)
+                sleep(0.5)
                 mixer.music.set_volume(0)
                 mute = True
+                config_data["muted"] = True
             else:
                 mixer.music.set_volume(volume_percent)
                 mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
                 mixer.music.play()
                 mute = False # Fixed line
+                config_data["muted"] = False
+            self.save_config()    
 
 
 
