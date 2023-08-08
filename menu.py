@@ -17,6 +17,8 @@ current_directory = os.getcwd()
 # Create the path to the audio file inside the 'audio' folder
 audio_folder = os.path.join(current_directory, 'Audio')
 
+image_folder = os.path.join(current_directory, 'Images')
+
 mute = False
 
 class DraggableWidget(QtWidgets.QWidget):
@@ -48,7 +50,7 @@ class Overlay(QtWidgets.QWidget):
         self.label = QtWidgets.QLabel(self)
 
         # Load image and convert it to QImage
-        image = QImage(os.path.join(audio_folder, 'rosh.png'))
+        image = QImage(os.path.join(image_folder, 'rosh.png'))
 
         # Convert QImage to QPixmap and resize
         self.pixmap = QPixmap.fromImage(image).scaled(100, 100, QtCore.Qt.KeepAspectRatio)
@@ -200,7 +202,7 @@ class MainWindow(DraggableWidget):
 
         # Add an icon to the header layout
         icon_label = QtWidgets.QLabel(self)
-        pixmap = QPixmap(os.path.join(audio_folder, "retush.png"))  # Load the image
+        pixmap = QPixmap(os.path.join(image_folder, "retush.png"))  # Load the image
         icon_label.setPixmap(pixmap.scaled(30, 30, QtCore.Qt.KeepAspectRatio))  # Set the image to the label, resizing as needed
         header_layout.addWidget(icon_label, alignment=QtCore.Qt.AlignCenter)  # Add the icon to the header layout
 

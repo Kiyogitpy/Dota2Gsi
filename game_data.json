@@ -1,0 +1,228 @@
+{
+    "provider": {
+        "name": "Dota 2",
+        "appid": 570,
+        "version": 47,
+        "timestamp": 1691521370
+    },
+    "map": {
+        "name": "hero_demo_main",
+        "matchid": "0",
+        "game_time": 795,
+        "clock_time": 792,
+        "daytime": true,
+        "nightstalker_night": false,
+        "radiant_score": 0,
+        "dire_score": 0,
+        "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+        "paused": false,
+        "win_team": "none",
+        "customgamename": "E:\\Steam\\steamapps\\common\\dota 2 beta\\game\\dota_addons\\hero_demo",
+        "ward_purchase_cooldown": 0
+    },
+    "player": {
+        "steamid": "76561199052222810",
+        "accountid": "1091957082",
+        "name": "Kiyo",
+        "activity": "playing",
+        "kills": 0,
+        "deaths": 0,
+        "assists": 0,
+        "last_hits": 1,
+        "denies": 0,
+        "kill_streak": 0,
+        "commands_issued": 179,
+        "kill_list": {},
+        "team_name": "radiant",
+        "player_slot": 0,
+        "team_slot": 0,
+        "gold": 99999,
+        "gold_reliable": 0,
+        "gold_unreliable": 99999,
+        "gold_from_hero_kills": 0,
+        "gold_from_creep_kills": 39,
+        "gold_from_income": 1195,
+        "gold_from_shared": 0,
+        "gpm": 7666,
+        "xpm": 317
+    },
+    "hero": {
+        "xpos": -1316,
+        "ypos": -951,
+        "id": 74,
+        "name": "npc_dota_hero_invoker",
+        "level": 8,
+        "xp": 4189,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 7899,
+        "buyback_cooldown": 0,
+        "health": 934,
+        "max_health": 934,
+        "health_percent": 100,
+        "mana": 388,
+        "max_mana": 639,
+        "mana_percent": 60,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": false,
+        "smoked": false,
+        "has_debuff": false,
+        "talent_1": false,
+        "talent_2": false,
+        "talent_3": false,
+        "talent_4": false,
+        "talent_5": false,
+        "talent_6": false,
+        "talent_7": false,
+        "talent_8": false,
+        "attributes_level": 0
+    },
+    "abilities": {
+        "ability0": {
+            "name": "invoker_quas",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability1": {
+            "name": "invoker_wex",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability2": {
+            "name": "invoker_exort",
+            "level": 0,
+            "can_cast": false,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability3": {
+            "name": "invoker_emp",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability4": {
+            "name": "invoker_cold_snap",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability5": {
+            "name": "invoker_invoke",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": true
+        },
+        "ability6": {
+            "name": "plus_high_five",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        },
+        "ability7": {
+            "name": "plus_guild_banner",
+            "level": 1,
+            "can_cast": true,
+            "passive": false,
+            "ability_active": true,
+            "cooldown": 0,
+            "ultimate": false
+        }
+    },
+    "items": {
+        "slot0": {
+            "name": "empty"
+        },
+        "slot1": {
+            "name": "empty"
+        },
+        "slot2": {
+            "name": "empty"
+        },
+        "slot3": {
+            "name": "empty"
+        },
+        "slot4": {
+            "name": "empty"
+        },
+        "slot5": {
+            "name": "empty"
+        },
+        "slot6": {
+            "name": "empty"
+        },
+        "slot7": {
+            "name": "empty"
+        },
+        "slot8": {
+            "name": "empty"
+        },
+        "stash0": {
+            "name": "empty"
+        },
+        "stash1": {
+            "name": "empty"
+        },
+        "stash2": {
+            "name": "empty"
+        },
+        "stash3": {
+            "name": "empty"
+        },
+        "stash4": {
+            "name": "empty"
+        },
+        "stash5": {
+            "name": "empty"
+        },
+        "teleport0": {
+            "name": "item_tpscroll",
+            "purchaser": 0,
+            "item_level": 1,
+            "can_cast": true,
+            "cooldown": 0,
+            "passive": false,
+            "charges": 1
+        },
+        "neutral0": {
+            "name": "empty"
+        }
+    },
+    "previously": {
+        "player": {
+            "gpm": 7669
+        },
+        "hero": {
+            "mana": 387
+        }
+    }
+}

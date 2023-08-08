@@ -1,18 +1,1 @@
-{
-    "bounty_checkbox": false,
-    "power_checked": false,
-    "stack_checkbox": true,
-    "exprune_checkbox": true,
-    "thirdsound_checkbox": true,
-    "pull_checkbox": true,
-    "mute_keybind": "m",
-    "rosh_keybind": "f21",
-    "chat_keybind": "f22",
-    "volume_percent": 100,
-    "show_hide_keybind": "home",
-    "muted": false,
-    "position": [
-        1333,
-        408
-    ]
-}
+{"bounty_checkbox": false, "power_checked": false, "stack_checkbox": true, "exprune_checkbox": true, "thirdsound_checkbox": true, "pull_checkbox": true, "mute_keybind": "m", "rosh_keybind": "f21", "chat_keybind": "f22", "volume_percent": 100, "show_hide_keybind": "home", "muted": false, "position": [1706, 462], "position2": [448, 1079]}
