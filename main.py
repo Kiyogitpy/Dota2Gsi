@@ -9,6 +9,7 @@ current_directory = os.getcwd()
 audio_folder = os.path.join(current_directory, 'Audio')
 audio_file_path = os.path.join(audio_folder, 'goodbye.wav')
 
+
 mixer.init()
 
 try:

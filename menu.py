@@ -1,15 +1,16 @@
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap, QImage, QIcon
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QSlider, QGridLayout, QApplication
-import keyboard  # import the keyboard package
-from time import sleep
-import os
-from pygame import mixer
-import sys
 import json
+import os
+import sys
+from time import sleep
 
+import keyboard  # import the keyboard package
+from pygame import mixer
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtWidgets import QApplication, QGridLayout, QSlider
 
+from template import find_template_on_screen
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -20,6 +21,7 @@ audio_folder = os.path.join(current_directory, 'Audio')
 image_folder = os.path.join(current_directory, 'Images')
 
 mute = False
+
 
 class DraggableWidget(QtWidgets.QWidget):
     def __init__(self, on_move_callback=None):
@@ -43,7 +45,8 @@ class Overlay(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self)
 
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
+                            QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setGeometry(100, 100, 100, 100)
         self.notification_shown = False
@@ -53,7 +56,8 @@ class Overlay(QtWidgets.QWidget):
         image = QImage(os.path.join(image_folder, 'rosh.png'))
 
         # Convert QImage to QPixmap and resize
-        self.pixmap = QPixmap.fromImage(image).scaled(100, 100, QtCore.Qt.KeepAspectRatio)
+        self.pixmap = QPixmap.fromImage(image).scaled(
+            100, 100, QtCore.Qt.KeepAspectRatio)
         self.label.setPixmap(self.pixmap)
 
         self.original_counter = 11*60
@@ -73,9 +77,14 @@ class Overlay(QtWidgets.QWidget):
 
         # Position window
         self.move(350, height - 250)
-        
+
         # Initially hide the window
         self.hide()
+
+        # Timer to check for the template on screen every 500ms
+        self.template_check_timer = QtCore.QTimer()
+        self.template_check_timer.timeout.connect(self.check_template)
+        self.template_check_timer.start(1500)
 
         self.hotkey_timer = QtCore.QTimer()
         self.hotkey_timer.timeout.connect(self.check_hotkey)
@@ -83,12 +92,19 @@ class Overlay(QtWidgets.QWidget):
 
         self.rosh_timer_keybind = 'f21'
         self.chat_keybind = 'f22'
+
     def set_chat_keybind(self, keybind):
         self.chat_keybind = keybind
+
     def set_rosh_timer_keybind(self, keybind):
         self.rosh_timer_keybind = keybind
 
-    
+    def check_template(self):
+        # Check for the template on screen
+        if find_template_on_screen():
+            self.reset_timer()
+            self.start_timer()
+
     def update_counter(self):
         self.counter -= 1
         if self.counter <= 0:
@@ -105,7 +121,6 @@ class Overlay(QtWidgets.QWidget):
             if self.counter <= 180:
                 self.notify_roshan_up(time_string)
                 self.notification_shown = True
-
 
     def get_time_string(self):
         minutes, seconds = divmod(self.counter, 60)
@@ -125,7 +140,8 @@ class Overlay(QtWidgets.QWidget):
         self.hide()
 
     def check_hotkey(self):
-        rosh_timer_keybind = self.rosh_timer_keybind if hasattr(self, 'rosh_timer_keybind') else 'f21'
+        rosh_timer_keybind = self.rosh_timer_keybind if hasattr(
+            self, 'rosh_timer_keybind') else 'f21'
         if keyboard.is_pressed(rosh_timer_keybind):
             if self.timerActive:
                 self.reset_timer()
@@ -142,7 +158,8 @@ class Overlay(QtWidgets.QWidget):
             mixer.music.play()
             keyboard.press_and_release('enter')
             sleep(0.1)
-            keyboard.write(" Roshan can be up from now and guaranteed to be up in:  " + time_string + " min")
+            keyboard.write(
+                " Roshan can be up from now and guaranteed to be up in:  " + time_string + " min")
             sleep(0.1)
             keyboard.press_and_release('enter')
             sleep(0.1)
@@ -153,10 +170,12 @@ class Overlay(QtWidgets.QWidget):
             print(time_string)
             keyboard.press_and_release('enter')
             sleep(0.1)
-            keyboard.write(time_string + " Until roshan is guaranteed to spawn")
+            keyboard.write(
+                time_string + " Until roshan is guaranteed to spawn")
             sleep(0.1)
             keyboard.press_and_release('enter')
             sleep(0.1)
+
 
 class MainWindow(DraggableWidget):
     def __init__(self, overlay):
@@ -165,7 +184,8 @@ class MainWindow(DraggableWidget):
         self.setWindowTitle('Welcome')
         self.setObjectName("mainwindow")
         self.setGeometry(200, 200, 400, 300)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint |
+                            QtCore.Qt.WindowStaysOnTopHint)
         self.oldPos = QtCore.QPoint(0, 0)
         self.is_recording = False
         self.recording_for = None
@@ -173,9 +193,9 @@ class MainWindow(DraggableWidget):
 
         try:
             with open('config.json', 'r') as config_file:
-                    config = json.load(config_file)
-                    x, y = config['position']
-                    self.move(x, y)
+                config = json.load(config_file)
+                x, y = config['position']
+                self.move(x, y)
         except (json.JSONDecodeError, KeyError):
             print("Error reading config.json, using default values")
 
@@ -187,7 +207,8 @@ class MainWindow(DraggableWidget):
         exit_button.setFixedWidth(30)
         exit_button.clicked.connect(self.close)
 
-        header_layout = QtWidgets.QHBoxLayout()  # Create a horizontal layout for the header
+        # Create a horizontal layout for the header
+        header_layout = QtWidgets.QHBoxLayout()
 
         # Create a label for the header text
         header_label = QtWidgets.QLabel("Dota 2 Timer", self)
@@ -198,13 +219,17 @@ class MainWindow(DraggableWidget):
                 color: #d2f5fe;
             }
         """)
-        header_layout.addWidget(header_label)  # Add the label to the header layout
+        header_layout.addWidget(
+            header_label)  # Add the label to the header layout
 
         # Add an icon to the header layout
         icon_label = QtWidgets.QLabel(self)
-        pixmap = QPixmap(os.path.join(image_folder, "retush.png"))  # Load the image
-        icon_label.setPixmap(pixmap.scaled(30, 30, QtCore.Qt.KeepAspectRatio))  # Set the image to the label, resizing as needed
-        header_layout.addWidget(icon_label, alignment=QtCore.Qt.AlignCenter)  # Add the icon to the header layout
+        pixmap = QPixmap(os.path.join(
+            image_folder, "retush.png"))  # Load the image
+        # Set the image to the label, resizing as needed
+        icon_label.setPixmap(pixmap.scaled(30, 30, QtCore.Qt.KeepAspectRatio))
+        # Add the icon to the header layout
+        header_layout.addWidget(icon_label, alignment=QtCore.Qt.AlignCenter)
 
         # Add exit button to the header layout
         header_layout.addWidget(exit_button, alignment=QtCore.Qt.AlignRight)
@@ -212,59 +237,73 @@ class MainWindow(DraggableWidget):
         # Add the header layout to the main layout
         layout.addLayout(header_layout)
 
-        
-
         # Button for rosh timer keybind
-        self.rosh_timer_button = QtWidgets.QPushButton('Set rosh timer keybind', self)
-        self.rosh_timer_button.clicked.connect(lambda: self.apply_keybind_button('rosh'))
+        self.rosh_timer_button = QtWidgets.QPushButton(
+            'Set rosh timer keybind', self)
+        self.rosh_timer_button.clicked.connect(
+            lambda: self.apply_keybind_button('rosh'))
         grid_layout.addWidget(self.rosh_timer_button, 0, 0)
 
         # Button for chat keybind
-        self.chat_timer_button = QtWidgets.QPushButton('Set chat keybind', self)
-        self.chat_timer_button.clicked.connect(lambda: self.apply_keybind_button('chat'))
+        self.chat_timer_button = QtWidgets.QPushButton(
+            'Set chat keybind', self)
+        self.chat_timer_button.clicked.connect(
+            lambda: self.apply_keybind_button('chat'))
         grid_layout.addWidget(self.chat_timer_button, 0, 1)
 
         # Button for mute keybind
-        self.mute_keybind_button = QtWidgets.QPushButton('Set mute keybind', self)
-        self.mute_keybind_button.clicked.connect(lambda: self.apply_keybind_button('mute'))
+        self.mute_keybind_button = QtWidgets.QPushButton(
+            'Set mute keybind', self)
+        self.mute_keybind_button.clicked.connect(
+            lambda: self.apply_keybind_button('mute'))
         grid_layout.addWidget(self.mute_keybind_button, 1, 0)
 
         # Button for show/hide keybind
-        self.show_hide_button = QtWidgets.QPushButton('Set show/hide keybind', self)
-        self.show_hide_button.clicked.connect(lambda: self.apply_keybind_button('show_hide'))
+        self.show_hide_button = QtWidgets.QPushButton(
+            'Set show/hide keybind', self)
+        self.show_hide_button.clicked.connect(
+            lambda: self.apply_keybind_button('show_hide'))
         grid_layout.addWidget(self.show_hide_button, 1, 1)
 
         layout.addLayout(grid_layout)
-        
-        #checkboxes
+
+        # checkboxes
         checkbox_layout = QGridLayout()
 
         self.bounty_checkbox = QtWidgets.QCheckBox('Enable Bounty Rune', self)
         self.bounty_checkbox.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.bounty_checkbox, 0, 0)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.bounty_checkbox, 0, 0)  # Add to grid layout
 
         self.power_checked = QtWidgets.QCheckBox('Enable Power rune', self)
         self.power_checked.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.power_checked, 0, 1)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.power_checked, 0, 1)  # Add to grid layout
 
         self.stack_checkbox = QtWidgets.QCheckBox('Enable Stack Alert', self)
         self.stack_checkbox.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.stack_checkbox, 1, 0)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.stack_checkbox, 1, 0)  # Add to grid layout
 
-        self.exprune_checkbox = QtWidgets.QCheckBox('Enable Express Rune Alert', self)
+        self.exprune_checkbox = QtWidgets.QCheckBox(
+            'Enable Express Rune Alert', self)
         self.exprune_checkbox.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.exprune_checkbox, 1, 1)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.exprune_checkbox, 1, 1)  # Add to grid layout
 
-        self.thirdsound_checkbox = QtWidgets.QCheckBox('Enable Lotus Alert', self)
+        self.thirdsound_checkbox = QtWidgets.QCheckBox(
+            'Enable Lotus Alert', self)
         self.thirdsound_checkbox.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.thirdsound_checkbox, 0, 2)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.thirdsound_checkbox, 0, 2)  # Add to grid layout
 
         self.pull_checkbox = QtWidgets.QCheckBox('Enable pull alert', self)
         self.pull_checkbox.setChecked(True)  # Initially checked
-        checkbox_layout.addWidget(self.pull_checkbox, 1, 2)  # Add to grid layout
+        checkbox_layout.addWidget(
+            self.pull_checkbox, 1, 2)  # Add to grid layout
 
-        layout.addLayout(checkbox_layout)  # Add the grid layout to the main layout
-
+        # Add the grid layout to the main layout
+        layout.addLayout(checkbox_layout)
 
         # Connect checkbox state change to configuration saving
         self.bounty_checkbox.stateChanged.connect(self.save_config)
@@ -279,7 +318,6 @@ class MainWindow(DraggableWidget):
         self.chat_timer_button.clicked.connect(self.save_config)
         self.mute_keybind_button.clicked.connect(self.save_config)
         self.show_hide_button.clicked.connect(self.save_config)
-        
 
         # Create a Volume Slider
         self.volume_slider = QSlider(QtCore.Qt.Horizontal, self)
@@ -289,10 +327,10 @@ class MainWindow(DraggableWidget):
         self.volume_slider.valueChanged.connect(self.save_volume_config)
         layout.addWidget(self.volume_slider)
 
-        self.load_config() 
+        self.load_config()
         # Set Layout
         self.setLayout(layout)
-        
+
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.check_key_press)
         self.timer.start(100)  # Check every 100 milliseconds
@@ -301,7 +339,7 @@ class MainWindow(DraggableWidget):
     def save_volume_config(self):
         self.save_config()
 
-    #Crude way of loading/saving config, should rework to json to use pandas
+    # Crude way of loading/saving config, should rework to json to use pandas
     def load_config(self):
         try:
             with open('config.json', 'r') as file:
@@ -309,8 +347,10 @@ class MainWindow(DraggableWidget):
                 self.bounty_checkbox.setChecked(config_data['bounty_checkbox'])
                 self.power_checked.setChecked(config_data['power_checked'])
                 self.stack_checkbox.setChecked(config_data['stack_checkbox'])
-                self.exprune_checkbox.setChecked(config_data['exprune_checkbox'])
-                self.thirdsound_checkbox.setChecked(config_data['thirdsound_checkbox'])
+                self.exprune_checkbox.setChecked(
+                    config_data['exprune_checkbox'])
+                self.thirdsound_checkbox.setChecked(
+                    config_data['thirdsound_checkbox'])
                 self.pull_checkbox.setChecked(config_data['pull_checkbox'])
                 self.mute_keybind = config_data['mute_keybind']
                 self.rosh_keybind = config_data['rosh_keybind']
@@ -324,10 +364,14 @@ class MainWindow(DraggableWidget):
                 x, y = config_data['position']
                 self.move(x, y)
 
-                self.mute_keybind_button.setText(f'Mute keybind: {self.mute_keybind}')
-                self.rosh_timer_button.setText(f'Rosh timer keybind: {self.rosh_keybind}')
-                self.chat_timer_button.setText(f'Chat keybind: {self.chat_keybind}')
-                self.show_hide_button.setText(f'Show/Hide keybind: {self.show_hide_keybind}')
+                self.mute_keybind_button.setText(
+                    f'Mute keybind: {self.mute_keybind}')
+                self.rosh_timer_button.setText(
+                    f'Rosh timer keybind: {self.rosh_keybind}')
+                self.chat_timer_button.setText(
+                    f'Chat keybind: {self.chat_keybind}')
+                self.show_hide_button.setText(
+                    f'Show/Hide keybind: {self.show_hide_keybind}')
 
                 self.overlay.set_rosh_timer_keybind(self.rosh_keybind)
                 self.overlay.set_chat_keybind(self.chat_keybind)
@@ -353,13 +397,10 @@ class MainWindow(DraggableWidget):
             'position': [self.x(), self.y()],
         }
 
-        
-
         with open('config.json', 'w') as file:
             json.dump(config_data, file, indent=4)
 
         print("Configuration saved!")
-
 
     def keyPressEvent(self, event):
         if self.is_recording:
@@ -386,18 +427,21 @@ class MainWindow(DraggableWidget):
         if self.recording_for == 'rosh':
             self.rosh_keybind = key_combination
             self.overlay.set_rosh_timer_keybind(key_combination)
-            self.rosh_timer_button.setText(f'Rosh timer keybind: {key_combination}')
+            self.rosh_timer_button.setText(
+                f'Rosh timer keybind: {key_combination}')
         elif self.recording_for == 'chat':
             self.chat_keybind = key_combination
             self.overlay.set_chat_keybind(key_combination)
             self.chat_timer_button.setText(f'Chat keybind: {key_combination}')
         elif self.recording_for == 'mute':
             self.mute_keybind = key_combination
-            self.mute_keybind_button.setText(f'Mute keybind: {key_combination}')
+            self.mute_keybind_button.setText(
+                f'Mute keybind: {key_combination}')
         elif self.recording_for == 'show_hide':
             self.show_hide_keybind = key_combination
-            self.show_hide_button.setText(f'Show/Hide keybind: {key_combination}')
-        
+            self.show_hide_button.setText(
+                f'Show/Hide keybind: {key_combination}')
+
         self.is_recording = False
         self.recording_for = None
         self.save_config()
@@ -415,10 +459,9 @@ class MainWindow(DraggableWidget):
         # Save the changes to the config file
         self.save_config()
 
-
     def check_key_press(self):
         global mute
-        with open("config.json", "r") as file:  
+        with open("config.json", "r") as file:
             config_data = json.load(file)
             volume_percent = config_data["volume_percent"] / 100
         if hasattr(self, 'show_hide_keybind') and keyboard.is_pressed(self.show_hide_keybind):
@@ -438,10 +481,9 @@ class MainWindow(DraggableWidget):
                 mixer.music.set_volume(volume_percent)
                 mixer.music.load(os.path.join(audio_folder, 'unmuted.wav'))
                 mixer.music.play()
-                mute = False # Fixed line
+                mute = False  # Fixed line
                 config_data["muted"] = False
-            self.save_config()    
-
+            self.save_config()
 
 
 if __name__ == "__main__":
@@ -503,7 +545,7 @@ if __name__ == "__main__":
             background-color: #2cceb9; /* --accent */
         }
     """)
-    
+
     icon_path = os.path.abspath("Audio/retush.png")
     app_icon = QIcon()
     app_icon.addFile(icon_path, QSize(16, 16))
@@ -511,4 +553,4 @@ if __name__ == "__main__":
     overlay = Overlay()
     config_menu = MainWindow(overlay)
     config_menu.show()
-    sys.exit(app.exec_()) # Start the application's main loop
+    sys.exit(app.exec_())  # Start the application's main loop

@@ -1,24 +1,26 @@
-import sys
-from cx_Freeze import setup, Executable
+import os
 
-# Dependencies are automatically detected, but it might need fine-tuning.
-build_exe_options = {
-    "packages": [
-        "keyboard", "pygame", "os", "json", "flask", "logging",
-        "PyQt5", "threading", "sys", "time", "subprocess"
-    ],
-    "include_files": ["Images/", "Audio/"],  # Adding Image and Audio directories
-    "excludes": [],  # Optionally exclude certain packages/modules if not needed
-}
+from cx_Freeze import Executable, setup
 
-base = None
-if sys.platform == "win32":
-    base = "Win32GUI"
+include_files = ['Audio', 'Images']
+
+# Make sure to provide the full path for each folder
+include_files = [(folder, os.path.join(folder)) for folder in include_files]
+
+executables = [
+    Executable("main.py"),
+    Executable("flask_server.py"),
+    Executable("menu.py"),
+]
 
 setup(
-    name="Dota2Timer",
+    name="Dota2Gsi",
     version="1.2",
-    description="app Dota2Timer",
-    options={"build_exe": build_exe_options},
-    executables=[Executable("main.py", base=base)]
+    description="Dota2Gsi",
+    executables=executables,
+    options={
+        'build_exe': {
+            'include_files': include_files,
+        },
+    }
 )
