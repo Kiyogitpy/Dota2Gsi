@@ -3,14 +3,40 @@ import os
 import sys
 from time import sleep
 
+import cv2
 import keyboard  # import the keyboard package
+import numpy as np
+import pyautogui
 from pygame import mixer
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QGridLayout, QSlider
 
-from template import find_template_on_screen
+# Reduced resolution template
+template = cv2.imread('Images/template.png', cv2.IMREAD_GRAYSCALE)
+# Reduce the resolution by half
+template = cv2.resize(template, (0, 0), fx=0.5, fy=0.5)
+
+
+def capture_screen(region=None):
+    screenshot = pyautogui.screenshot(region=region)
+    screen = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    # Reduce the resolution of the screen capture
+    screen = cv2.resize(screen, (0, 0), fx=0.5, fy=0.5)
+    return screen
+
+
+def find_template_on_screen(threshold=0.8):
+    screen = capture_screen(region=(135, 950, 130, 90))
+    screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
+    res = cv2.matchTemplate(screen_gray, template, cv2.TM_CCOEFF_NORMED)
+    loc = np.where(res >= threshold)
+
+    if loc[0].size:
+        return True
+    return False
+
 
 # Get the current working directory
 current_directory = os.getcwd()
@@ -137,6 +163,7 @@ class Overlay(QtWidgets.QWidget):
         self.timer.stop()
         self.timerActive = False
         self.text.setStyleSheet("color: white")
+        self.notification_shown = False
         self.hide()
 
     def check_hotkey(self):
@@ -154,7 +181,7 @@ class Overlay(QtWidgets.QWidget):
     def notify_roshan_up(self, time_string):
         if self.timerActive and self.counter <= 180:
             print(time_string)
-            mixer.music.load(os.path.join(audio_folder, 'exprune.wav'))
+            mixer.music.load(os.path.join(audio_folder, 'roshan.wav'))
             mixer.music.play()
             keyboard.press_and_release('enter')
             sleep(0.1)
