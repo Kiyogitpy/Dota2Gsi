@@ -10,9 +10,9 @@
     "chat_keybind": "f22",
     "volume_percent": 0,
     "show_hide_keybind": "home",
-    "muted": false,
+    "muted": true,
     "position": [
-        767,
-        506
+        644,
+        515
     ]
 }

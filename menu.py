@@ -205,7 +205,7 @@ class MainWindow(DraggableWidget):
         exit_button.setObjectName("exitButton")
 
         exit_button.setFixedWidth(30)
-        exit_button.clicked.connect(self.close)
+        exit_button.clicked.connect(self.hide)
 
         # Create a horizontal layout for the header
         header_layout = QtWidgets.QHBoxLayout()
