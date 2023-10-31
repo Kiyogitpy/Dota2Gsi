@@ -8,11 +8,11 @@
     "mute_keybind": "m",
     "rosh_keybind": "f21",
     "chat_keybind": "f22",
-    "volume_percent": 0,
+    "volume_percent": 89,
     "show_hide_keybind": "home",
-    "muted": true,
+    "muted": false,
     "position": [
-        644,
-        515
+        703,
+        341
     ]
 }
