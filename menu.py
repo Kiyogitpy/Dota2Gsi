@@ -208,7 +208,7 @@ class MainWindow(DraggableWidget):
     def __init__(self, overlay):
         super().__init__(on_move_callback=self.save_config)
         self.overlay = overlay  # Store the overlay instance
-        self.setWindowTitle('Welcome')
+        self.setWindowTitle('Dota2Gsi')
         self.setObjectName("mainwindow")
         self.setGeometry(200, 200, 400, 300)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint |

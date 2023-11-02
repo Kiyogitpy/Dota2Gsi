@@ -45,7 +45,6 @@ def process_game_data(minutes, seconds):
         settings = json.load(file)
 
     if not settings['muted']:
-
         alerts = [
             (settings['stack_checkbox'] and minutes >=
              1 and seconds == 40, 'stack'),
@@ -143,6 +142,7 @@ class Overlay_pulse(QWidget):
 
 overlay = Overlay_pulse()
 has_run = 0
+ward_run = True
 
 
 @app.route('/', methods=['POST'])
@@ -150,19 +150,37 @@ def handle_post():
     global seconds
     global minutes
     global has_run
+    global ward_run
     data = request.get_json()
+    # Debugger for json testing purposes
+    # if data:
+    #     with open('game_data.json', 'w') as file:
+    #         json.dump(data, file, indent=4)
+
+    # Wip toggle threads, donnu how yet
+    # if 'items' in data and data['items']:
+    #     for item_nr in range(6):
+    #         if data['items']["slot"+str(item_nr)]['name'] == 'item_power_treads':
+    #             print(item_nr)
 
     # Handle map and clock_time
     if 'map' in data and 'clock_time' in data['map']:
         clock_time = data['map']['clock_time']
+        ward_time = data['map']['ward_purchase_cooldown']
         if clock_time >= 0:
             seconds = clock_time % 60
             minutes = clock_time // 60
-
             response = process_game_data(minutes, seconds)
             if response and response != "OK" and has_run != seconds:
                 overlay.signal_update_image.emit(response)
                 overlay.signal_start_animation.emit()
+            if ward_time == 0 and response == "OK" and ward_run:
+                overlay.signal_update_image.emit(
+                    os.path.join(image_folder, 'ward.png'))
+                overlay.signal_start_animation.emit()
+                ward_run = False
+            if ward_time > 0:
+                ward_run = True
             return str(response) if response else "OK"
 
     return "OK"
